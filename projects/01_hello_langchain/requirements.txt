@@ -1,0 +1,2 @@
+# No additional dependencies beyond requirements-base.txt for this project.
+# All required packages (langchain, langchain-ollama, python-dotenv) are in the root requirements-base.txt.

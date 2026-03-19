@@ -1,0 +1,9 @@
+# ─── Core LangChain ──────────────────────────────────────────
+langchain
+langchain-community
+langchain-ollama          # Dedicated Ollama integration (preferred over community)
+langgraph                 # For stateful multi-step agentic workflows
+
+# ─── Utilities ───────────────────────────────────────────────
+python-dotenv             # Load .env files
+httpx                     # HTTP client used by langchain-ollama for auth headers
