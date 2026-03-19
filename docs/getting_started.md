@@ -38,13 +38,41 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 
 > **Note:** Never commit your `.env` file. It is listed in `.gitignore`.
 
-### 3. Install Base Dependencies
+### 3. Create and Activate a Virtual Environment
+
+Creating a virtual environment prevents dependency conflicts between projects and keeps your global Python installation clean.
+
+```bash
+# From the repo root
+python -m venv venv
+```
+
+Activate it before installing anything or running any script:
+
+**Windows (PowerShell):**
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+**Windows (Command Prompt):**
+```cmd
+venv\Scripts\activate.bat
+```
+
+**macOS / Linux:**
+```bash
+source venv/bin/activate
+```
+
+Your prompt will show `(venv)` when the environment is active. See [prerequisites.md](prerequisites.md) for more details.
+
+### 4. Install Base Dependencies
 
 ```bash
 pip install -r requirements-base.txt
 ```
 
-### 4. Run a Project
+### 5. Run a Project
 
 ```bash
 cd projects/01_hello_langchain
@@ -99,7 +127,7 @@ Update `.env` for local use:
 ```dotenv
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_API_KEY=                        # Leave blank — no auth for local Ollama
-OLLAMA_MODEL=llama3.1:8b               # Or whichever model you pulled
+OLLAMA_MODEL=gpt-oss:20b               # Or whichever model you pulled
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
@@ -109,7 +137,31 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ollama pull nomic-embed-text           # required for RAG/embedding projects
 ```
 
-### 5. Install & Run
+### 5. Create and Activate a Virtual Environment
+
+```bash
+# From the repo root
+python -m venv venv
+```
+
+Activate before installing packages or running scripts:
+
+**Windows (PowerShell):**
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+**Windows (Command Prompt):**
+```cmd
+venv\Scripts\activate.bat
+```
+
+**macOS / Linux:**
+```bash
+source venv/bin/activate
+```
+
+### 6. Install & Run
 
 ```bash
 pip install -r requirements-base.txt
@@ -132,7 +184,7 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 llm = get_llm()                          # uses OLLAMA_MODEL from .env
-llm = get_llm(model="llama3.1:8b")      # override per-call
+llm = get_llm(model="gpt-oss:20b")      # override per-call
 ```
 
 ---

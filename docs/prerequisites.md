@@ -71,15 +71,51 @@ Download from [https://git-scm.com/](https://git-scm.com/) if not installed.
 
 ---
 
-## 5. pip / Virtual Environment (Recommended)
+## 5. pip / Virtual Environment
+
+Using a virtual environment per project is **strongly recommended**. It isolates each project's dependencies so packages installed for one project cannot conflict with those of another, and keeps your global Python installation clean.
+
+### Verify pip is available
 
 ```bash
 pip --version
+```
 
-# Create and activate a virtual environment (recommended)
+### Create a virtual environment
+
+Run the following from the **repo root** (or from inside a specific project folder if you prefer a project-scoped env):
+
+```bash
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS / Linux:
+```
+
+This creates a `venv/` directory that holds an isolated Python interpreter and package tree.
+
+> The `venv/` directory is listed in `.gitignore` and will never be committed.
+
+### Activate the virtual environment
+
+You must activate the environment **before** installing packages or running any script.
+
+**Windows (PowerShell):**
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+**Windows (Command Prompt / cmd.exe):**
+```cmd
+venv\Scripts\activate.bat
+```
+
+**macOS / Linux:**
+```bash
 source venv/bin/activate
+```
+
+Once activated, your shell prompt will be prefixed with `(venv)`, confirming the environment is active.
+
+### Deactivate when done
+
+```bash
+deactivate
 ```

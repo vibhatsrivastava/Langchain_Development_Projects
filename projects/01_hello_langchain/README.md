@@ -23,17 +23,53 @@ cp .env.example .env
 # Fill in OLLAMA_BASE_URL and OLLAMA_API_KEY
 ```
 
-**2. Install dependencies (from repo root):**
+**2. Create a virtual environment (from the repo root):**
+
+This isolates the project's dependencies from your global Python installation and other projects.
+
+```bash
+python -m venv venv
+```
+
+**3. Activate the virtual environment:**
+
+You must activate the environment before installing packages or running the application.
+
+_Windows (PowerShell):_
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+_Windows (Command Prompt):_
+```cmd
+venv\Scripts\activate.bat
+```
+
+_macOS / Linux:_
+```bash
+source venv/bin/activate
+```
+
+Your prompt will show `(venv)` when the environment is active.
+
+**4. Install dependencies:**
 
 ```bash
 pip install -r requirements-base.txt
+pip install -r projects/01_hello_langchain/requirements.txt
 ```
 
-**3. Run:**
+**5. Run:**
 
 ```bash
 cd projects/01_hello_langchain
 python src/main.py
+```
+
+**6. Deactivate when done:**
+
+```bash
+deactivate
 ```
 
 ---

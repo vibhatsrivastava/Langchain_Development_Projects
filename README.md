@@ -37,14 +37,25 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 git clone https://github.com/vibhatsrivastava/Langchain_Development_Projects.git
 cd Langchain_Development_Projects
 
-# 2. Set up environment
+# 2. Set up environment variables
 cp .env.example .env
 # Edit .env with your OLLAMA_BASE_URL and OLLAMA_API_KEY
 
-# 3. Install base dependencies
+# 3. Create a virtual environment (prevents dependency conflicts between projects)
+python -m venv venv
+
+# 4. Activate the virtual environment
+# Windows (PowerShell):
+venv\Scripts\Activate.ps1
+# Windows (Command Prompt):
+# venv\Scripts\activate.bat
+# macOS / Linux:
+# source venv/bin/activate
+
+# 5. Install base dependencies
 pip install -r requirements-base.txt
 
-# 4. Run a project
+# 6. Run a project
 cd projects/01_hello_langchain
 pip install -r requirements.txt
 python src/main.py
