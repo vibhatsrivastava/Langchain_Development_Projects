@@ -90,9 +90,93 @@ Langchain_Development_Projects/
 ## Documentation
 
 - [Getting Started](docs/getting_started.md) — Setup for hosted or local Ollama
-- [Models](docs/models.md) — Default model, alternatives, how to swap
+- [Models](docs/models.md) — Default model, alternatives, how to swap, and LLM class reference
 - [Prerequisites](docs/prerequisites.md) — System requirements
 - [Contributing](docs/contributing.md) — How to add a new project
+
+---
+
+## Common LLM Factory
+
+All projects share a central `common/llm_factory.py` that provides three builder functions. Import the one that fits your use case — no boilerplate, no repeated configuration.
+
+| Builder | Returns | Use When |
+|---|---|---|
+| `get_llm()` | `OllamaLLM` | Simple string chains, single-turn prompts |
+| `get_chat_llm()` | `ChatOllama` | Agents, memory, tool-calling, JSON mode |
+| `get_embeddings()` | `OllamaEmbeddings` | RAG, vector stores, similarity search |
+
+All three read `OLLAMA_BASE_URL`, `OLLAMA_API_KEY`, and `OLLAMA_MODEL` from your `.env`. The `model` argument overrides the env default for that call only.
+
+---
+
+### `get_llm()` — Raw String Completion
+
+Best for simple prompt → string output chains with no message history.
+
+```python
+from common.llm_factory import get_llm
+from langchain_core.prompts import PromptTemplate
+
+llm = get_llm()  # uses OLLAMA_MODEL from .env; add model= or temperature= to override
+
+prompt = PromptTemplate.from_template("Summarise the following in one sentence:\n{text}")
+chain = prompt | llm
+
+result = chain.invoke({"text": "LangChain is a framework for building LLM-powered applications."})
+print(result)
+# → "LangChain is a framework that simplifies building applications powered by large language models."
+```
+
+---
+
+### `get_chat_llm()` — Conversational & Agentic
+
+Required for multi-turn conversations, LangGraph agents, tool calling, and structured JSON output.
+Uses OpenAI-compatible message roles (`system` / `human` / `ai`).
+
+```python
+from common.llm_factory import get_chat_llm
+from langchain_core.prompts import ChatPromptTemplate
+
+chat = get_chat_llm()  # uses OLLAMA_MODEL from .env; supports format="json" and num_ctx=
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant that answers concisely."),
+    ("human", "{question}"),
+])
+chain = prompt | chat
+
+response = chain.invoke({"question": "What is the difference between RAG and fine-tuning?"})
+print(response.content)
+# → "RAG retrieves external context at inference time; fine-tuning bakes knowledge into model weights."
+```
+
+---
+
+### `get_embeddings()` — Semantic Search & RAG
+
+Returns dense vector representations of text for use with any LangChain vector store.
+
+```python
+from common.llm_factory import get_embeddings
+from langchain_core.vectorstores import InMemoryVectorStore
+
+embeddings = get_embeddings()  # uses OLLAMA_EMBEDDING_MODEL from .env; add model= to override
+
+docs = [
+    "LangChain simplifies building LLM applications.",
+    "Ollama lets you run large language models locally.",
+    "RAG combines retrieval with language model generation.",
+]
+vector_store = InMemoryVectorStore.from_texts(docs, embedding=embeddings)
+
+results = vector_store.similarity_search("How do I run LLMs on my machine?", k=1)
+print(results[0].page_content)
+# → "Ollama lets you run large language models locally."
+```
+
+> For full parameter reference and advanced examples (JSON mode, extended context window, multi-turn memory), see [docs/models.md](docs/models.md#llm-classes--choosing-the-right-builder).
 
 ---
 
