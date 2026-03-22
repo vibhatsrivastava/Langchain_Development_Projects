@@ -7,17 +7,20 @@
 
 ## Table of Contents
 
-1. [Use Case Description](#1-use-case-description)
+1. [Use Case Description / Scenario](#1-use-case-description--scenario)
 2. [Objective](#2-objective)
 3. [Step-by-Step Thought Process](#3-step-by-step-thought-process)
 4. [Pseudo Code](#4-pseudo-code)
-5. [Implementation Steps](#5-implementation-steps)
-6. [Code Snippets](#6-code-snippets)
-7. [Expected Outcomes](#7-expected-outcomes)
+5. [High Level Workflow Diagram](#5-high-level-workflow-diagram)
+6. [Low Level Workflow Diagram](#6-low-level-workflow-diagram)
+7. [Implementation Steps](#7-implementation-steps)
+8. [Code Snippets](#8-code-snippets)
+9. [Test Cases](#9-test-cases)
+10. [Expected Outcomes](#10-expected-outcomes)
 
 ---
 
-## 1. Use Case Description
+## 1. Use Case Description / Scenario
 
 A user wants to ask a conversational AI assistant for the **current weather of any city** by typing a natural language question such as:
 
@@ -158,7 +161,138 @@ END FUNCTION
 
 ---
 
-## 5. Implementation Steps
+## 5. High Level Workflow Diagram
+
+This diagram shows the **user-facing flow** — what happens from the user's perspective at a conceptual level, without implementation detail.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   WEATHER REPORTING AGENT                       │
+│                     High Level Flow                             │
+└─────────────────────────────────────────────────────────────────┘
+
+  ┌──────────┐      Natural Language        ┌──────────────────┐
+  │   User   │ ──────────────────────────► │  Weather Agent   │
+  └──────────┘    "Weather in Tokyo?"       └────────┬─────────┘
+                                                     │
+                                          ┌──────────▼──────────┐
+                                          │   Understands city  │
+                                          │   = "Tokyo"         │
+                                          └──────────┬──────────┘
+                                                     │
+                                          ┌──────────▼──────────┐
+                                          │   Fetches live      │
+                                          │   weather data      │
+                                          └──────────┬──────────┘
+                                                     │
+  ┌──────────┐     Natural Language        ┌─────────▼──────────┐
+  │   User   │ ◄────────────────────────── │  Formulates answer │
+  └──────────┘  "22°C, partly cloudy..."   └────────────────────┘
+```
+
+**Key interactions at this level:**
+
+| Actor | Role |
+|---|---|
+| **User** | Sends a natural language weather question for any city |
+| **Weather Agent** | Interprets the question, fetches data, returns a natural language answer |
+| **Weather API** | Provides real-time temperature, wind speed, and conditions |
+
+---
+
+## 6. Low Level Workflow Diagram
+
+This diagram shows the **internal implementation flow** — every component, decision, and data transformation inside the agent.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        LOW LEVEL FLOW                               │
+└─────────────────────────────────────────────────────────────────────┘
+
+User Input
+  │  "What is the weather in Tokyo right now?"
+  │
+  ▼
+┌──────────────────────────────────────────┐
+│  LangGraph: create_react_agent           │
+│  MessagesState initialised               │
+│  messages = [HumanMessage(content=...)]  │
+└──────────────────┬───────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────┐
+│  AGENT NODE                              │
+│  ChatOllama.invoke(messages)             │
+│  LLM reasoning:                          │
+│    "I need to call get_weather(Tokyo)"   │
+│  Output: AIMessage with tool_calls=      │
+│    [{name: "get_weather",                │
+│      args: {"city": "Tokyo"}}]           │
+└──────────────────┬───────────────────────┘
+                   │  tool call detected
+                   ▼
+┌──────────────────────────────────────────┐
+│  CONDITIONAL EDGE: should_continue?      │
+│  tool_calls present? → YES → tools node  │
+└──────────────────┬───────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────┐
+│  TOOLS NODE: get_weather(city="Tokyo")   │
+│                                          │
+│  Step 1 — Geocoding API call             │
+│    GET geocoding-api.open-meteo.com      │
+│    params: name="Tokyo", count=1         │
+│    → lat=35.6895, lon=139.6917           │
+│                                          │
+│  Step 2 — Weather API call               │
+│    GET api.open-meteo.com/v1/forecast    │
+│    params: lat, lon, current=temp+wind   │
+│    → temp=22.1°C, wind=8.5km/h, code=2  │
+│                                          │
+│  Step 3 — Map WMO code 2 → "Partly       │
+│    cloudy"                               │
+│                                          │
+│  Returns: ToolMessage(content=           │
+│    "Current weather in Tokyo, Japan:     │
+│     22.1°C, Partly cloudy, wind 8.5")   │
+└──────────────────┬───────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────┐
+│  AGENT NODE (second pass)                │
+│  ChatOllama.invoke(all messages)         │
+│  LLM sees the ToolMessage observation    │
+│  Reasoning: "I have the answer now"      │
+│  Output: AIMessage (no tool_calls)       │
+│    "The weather in Tokyo is 22.1°C..."  │
+└──────────────────┬───────────────────────┘
+                   │  no tool calls
+                   ▼
+┌──────────────────────────────────────────┐
+│  CONDITIONAL EDGE: should_continue?      │
+│  tool_calls absent? → NO → END           │
+└──────────────────┬───────────────────────┘
+                   │
+                   ▼
+            Final Answer returned
+   "The weather in Tokyo, Japan is 22.1°C
+    with partly cloudy skies and a wind
+    speed of 8.5 km/h."
+```
+
+**Data flow summary:**
+
+```
+HumanMessage
+  └──► AIMessage (tool_calls)
+         └──► ToolMessage (geocode + weather API results)
+                └──► AIMessage (final natural language answer)
+```
+
+---
+
+## 7. Implementation Steps
 
 ### Prerequisites
 
@@ -171,6 +305,7 @@ END FUNCTION
 ```
 
 ### Step 1 — Install Additional Dependencies
+
 
 The Open-Meteo API is accessed via HTTP. Add `requests` to your project's requirements:
 
@@ -217,7 +352,7 @@ Test with several cities to observe the full ReAct trace.
 
 ---
 
-## 6. Code Snippets
+## 8. Code Snippets
 
 ### Full Implementation — `Playground/01_weather_agent.py`
 
@@ -350,7 +485,170 @@ print(answer)
 
 ---
 
-## 7. Expected Outcomes
+## 9. Test Cases
+
+### How to Execute Tests
+
+**Option A — Run the predefined test scenarios directly:**
+```bash
+# From the repo root with the virtual environment activated
+cd c:\Users\vsrivastava\Documents\GitHub\Langchain_Development_Projects
+python Playground/01_weather_agent.py
+```
+
+**Option B — Run a single test interactively:**
+```bash
+python -c "
+import sys, os
+sys.path.insert(0, '.')
+from Playground.weather_agent import build_agent, ask
+agent = build_agent()
+print(ask(agent, 'What is the weather in Berlin?'))
+"
+```
+
+**Option C — Test the tool in isolation (no LLM needed):**
+```bash
+python -c "
+import sys; sys.path.insert(0, '.')
+from Playground.weather_agent import get_weather
+print(get_weather.invoke({'city': 'Paris'}))
+"
+```
+
+---
+
+### Test Case Scenarios
+
+#### TC-01 — Valid City (Major World City)
+
+| Field | Value |
+|---|---|
+| **Input** | `"What is the weather like in Tokyo right now?"` |
+| **Expected Tool Call** | `get_weather(city="Tokyo")` |
+| **Expected Observation** | String containing temperature in °C, wind speed, and weather description |
+| **Expected Final Answer** | Natural language sentence with Tokyo's current temperature and conditions |
+| **Pass Criteria** | Response contains a numeric temperature value and mentions Tokyo |
+
+```python
+result = ask(agent, "What is the weather like in Tokyo right now?")
+assert "Tokyo" in result
+assert "°C" in result or "celsius" in result.lower() or any(char.isdigit() for char in result)
+```
+
+---
+
+#### TC-02 — Valid City (Different Continent)
+
+| Field | Value |
+|---|---|
+| **Input** | `"Tell me the current temperature in London."` |
+| **Expected Tool Call** | `get_weather(city="London")` |
+| **Expected Observation** | String with London's temperature, wind, and conditions |
+| **Expected Final Answer** | Natural language answer mentioning London and a temperature value |
+| **Pass Criteria** | Response contains a numeric value and mentions London |
+
+---
+
+#### TC-03 — Weather Condition Query (Rain Check)
+
+| Field | Value |
+|---|---|
+| **Input** | `"Is it raining in Sydney today?"` |
+| **Expected Tool Call** | `get_weather(city="Sydney")` |
+| **Expected Observation** | String with Sydney's conditions (rain-related code or not) |
+| **Expected Final Answer** | A yes/no answer about rain with supporting conditions |
+| **Pass Criteria** | Response mentions Sydney and addresses the rain question directly |
+
+---
+
+#### TC-04 — Multi-City Comparison
+
+| Field | Value |
+|---|---|
+| **Input** | `"Compare the weather in Paris and Berlin."` |
+| **Expected Tool Calls** | `get_weather(city="Paris")` AND `get_weather(city="Berlin")` (two calls) |
+| **Expected Final Answer** | Comparison of both cities' conditions in one response |
+| **Pass Criteria** | Response mentions both Paris and Berlin with distinct weather values |
+
+```python
+result = ask(agent, "Compare the weather in Paris and Berlin.")
+assert "Paris" in result
+assert "Berlin" in result
+```
+
+---
+
+#### TC-05 — Invalid / Misspelled City
+
+| Field | Value |
+|---|---|
+| **Input** | `"What is the weather in Xyzabc123?"` |
+| **Expected Tool Call** | `get_weather(city="Xyzabc123")` |
+| **Expected Observation** | `"City 'Xyzabc123' not found. Please check the spelling."` |
+| **Expected Final Answer** | Agent politely informs the user the city was not found |
+| **Pass Criteria** | Response does NOT contain a temperature value; mentions city not found |
+
+```python
+result = ask(agent, "What is the weather in Xyzabc123?")
+assert "not found" in result.lower() or "couldn't find" in result.lower() or "unable" in result.lower()
+```
+
+---
+
+#### TC-06 — Tool Isolation Test (No LLM)
+
+Test the `get_weather` tool directly without the agent to verify the API integration works independently.
+
+| Field | Value |
+|---|---|
+| **Input** | `get_weather.invoke({"city": "Berlin"})` |
+| **Expected Output** | String starting with `"Current weather in Berlin, Germany:"` |
+| **Pass Criteria** | Output contains `°C`, `km/h`, and a weather description word |
+
+```python
+from Playground.weather_agent import get_weather
+
+result = get_weather.invoke({"city": "Berlin"})
+assert "Berlin" in result
+assert "°C" in result
+assert "km/h" in result
+print("TC-06 PASSED:", result)
+```
+
+---
+
+#### TC-07 — Non-English City Name
+
+| Field | Value |
+|---|---|
+| **Input** | `"What is the weather in München?"` |
+| **Expected Tool Call** | `get_weather(city="München")` |
+| **Expected Observation** | Weather data for Munich, Germany |
+| **Expected Final Answer** | Natural language answer referencing Munich/München |
+| **Pass Criteria** | Tool resolves the non-ASCII city name and returns valid weather |
+
+---
+
+### Test Results Table
+
+After running the tests, record results here:
+
+| TC | Description | Status | Notes |
+|---|---|---|---|
+| TC-01 | Valid city — Tokyo | ⬜ Not run | |
+| TC-02 | Valid city — London | ⬜ Not run | |
+| TC-03 | Rain condition — Sydney | ⬜ Not run | |
+| TC-04 | Multi-city comparison | ⬜ Not run | |
+| TC-05 | Invalid city name | ⬜ Not run | |
+| TC-06 | Tool isolation test | ⬜ Not run | |
+| TC-07 | Non-English city name | ⬜ Not run | |
+
+> Update the Status column to ✅ Pass, ❌ Fail, or ⚠️ Partial as you run each case.
+
+---
+
+## 10. Expected Outcomes
 
 ### What You Should See
 

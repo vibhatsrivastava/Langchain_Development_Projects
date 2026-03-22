@@ -6,6 +6,9 @@ description: Describe when to use this prompt
 <!-- Tip: Use /create-prompt in chat to generate content with agent assistance -->
 
 """
-Create a indexed markdown file like 01_<use_case_name>.md under Playground directory.
-The file MUST contain one practise use case for agentic AI development with sections like "Use Case Description", "Objective", "Step-by-Step thought process", "Pseudo Code","Implementation Steps", "Code Snippets", and "Expected Outcomes". The use case should be practical and demonstrate the capabilities of agentic AI in a real-world scenario.
+1. Create a indexed markdown file like <index>_<use_case_name>.md under Playground directory.
+2. The file MUST contain only one implementation use case scenario for agentic AI development.
+3. The file MUST include sections like "Use Case Description or Scenario", "Objective", "Step-by-Step thought process", "Pseudo Code", "High Level Workflow Digram", "Low Level Workflow Diagram", "Implementation Steps", "Code Snippets", and "Expected Outcomes".
+4. The file MUST include test case scenarion and instructions on how to execute them.
+5. The use case SHOULD be practical and MUST demonstrate the capabilities of agentic AI in a real-world scenario.
 """
