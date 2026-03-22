@@ -1,5 +1,3 @@
-# 01 — What Is Agentic AI?
-
 > **Audience:** Beginners in AI/ML development | **Focus:** Concepts + Technical Interview Prep  
 > **References:** [LangChain Docs](https://docs.langchain.com/) · [LangGraph Docs](https://langchain-ai.github.io/langgraph/) · [OpenAI Platform Docs](https://platform.openai.com/docs/)
 
