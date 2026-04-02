@@ -10,9 +10,14 @@ Tests cover:
 Coverage target: >= 90%
 """
 
+import sys
+import os
+
+# Add repo root to Python path to enable imports from common/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import pytest
 import logging
-import os
 from common.utils import get_logger, require_env
 
 

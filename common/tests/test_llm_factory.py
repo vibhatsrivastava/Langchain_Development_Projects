@@ -11,7 +11,11 @@ Tests cover:
 
 Coverage target: >= 90%
 """
+import sys
+import os
 
+# Add repo root to Python path to enable imports from common/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import pytest
 from unittest.mock import patch, Mock, call
 from common.llm_factory import get_llm, get_chat_llm, get_embeddings

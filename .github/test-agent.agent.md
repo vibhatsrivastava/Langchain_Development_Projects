@@ -1,20 +1,6 @@
 ---
 name: test-agent
-description: Automatically generates comprehensive test suites with >= 90% coverage for AI agent applications. Specializes in pytest, mocking LLM calls, testing LangChain chains/agents, and ensuring production-ready test quality.
-applyTo:
-  - "**/*.py"
-tools:
-  - read_file
-  - create_file
-  - replace_string_in_file
-  - multi_replace_string_in_file
-  - grep_search
-  - semantic_search
-  - file_search
-  - list_dir
-  - run_in_terminal
-  - get_terminal_output
-  - runSubagent
+description: Automatically generates comprehensive test suites with >= 90% coverage for AI agent applications. Specializes in pytest, mocking LLM calls, testing LangChain chains/agents, and ensuring production-ready test quality. Invoke with '@test-agent generate tests for <file>' to analyze code and create comprehensive test files.
 ---
 
 # Test Agent — Comprehensive Test Suite Generator
