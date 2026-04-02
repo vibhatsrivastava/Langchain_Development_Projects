@@ -167,6 +167,96 @@ A corresponding `.py` file contains the runnable implementation.
 
 ---
 
+## Testing Conventions
+
+**All code must maintain >= 90% test coverage.** This repository uses pytest with comprehensive testing standards.
+
+### Testing Framework
+
+- **Framework**: pytest >=8.0.0 with pytest-cov, pytest-mock, pytest-asyncio
+- **Coverage threshold**: 90% minimum (enforced via `pytest.ini`)
+- **Mock strategy**: All LLM/Ollama calls must be mocked (no real API calls in tests)
+
+### Running Tests
+
+```powershell
+# Run all tests with coverage report
+pytest --cov --cov-report=term-missing
+
+# Run tests for specific module
+pytest common/tests/test_llm_factory.py -v
+
+# Verify >= 90% coverage (fails if below threshold)
+pytest --cov --cov-fail-under=90
+
+# Run only unit tests (fast)
+pytest -m unit
+```
+
+### Test Structure
+
+Each project/module has a `tests/` directory parallel to the code:
+
+```
+common/
+├── llm_factory.py
+└── tests/
+    ├── conftest.py             # Shared fixtures (mock_llm, mock_chat_llm)
+    ├── test_llm_factory.py     # Tests for llm_factory.py
+    └── test_utils.py           # Tests for utils.py
+
+projects/01_hello_langchain/
+├── src/
+│   └── main.py
+└── tests/
+    ├── conftest.py             # Project-specific fixtures
+    └── test_main.py            # Tests for main.py
+```
+
+### Critical Rules
+
+1. **Mock all LLMs**: Never make real Ollama/LLM API calls in tests. Use `mock_llm`, `mock_chat_llm`, and `mock_embeddings` fixtures from `common/tests/conftest.py`
+2. **90% coverage minimum**: Every new module must achieve >= 90% coverage
+3. **Test before commit**: Always run `pytest --cov --cov-fail-under=90` before pushing code
+4. **Test types required**: Unit tests (isolated functions), Integration tests (chains/agents), Mocked LLM interactions
+
+### Using the Test Agent
+
+To automatically generate comprehensive tests with >= 90% coverage:
+
+```
+@test-agent generate tests for common/llm_factory.py
+```
+
+The test agent analyzes code, generates test files, and verifies coverage. See [.github/test-agent.agent.md](.github/test-agent.agent.md) for details.
+
+### Example Test Pattern
+
+```python
+import pytest
+from unittest.mock import Mock
+
+def test_chain_with_mocked_llm(mock_llm):
+    """Test LCEL chain with mocked LLM (no real API calls)."""
+    mock_llm.invoke.return_value = "Mocked response"
+    
+    chain = prompt | get_llm() | StrOutputParser()
+    result = chain.invoke({"question": "test"})
+    
+    assert result == "Mocked response"
+    mock_llm.invoke.assert_called_once()
+```
+
+### Documentation
+
+- **Detailed testing guide**: [docs/testing.md](docs/testing.md) — Comprehensive patterns and examples
+- **Configuration**: `pytest.ini` — Coverage thresholds and test discovery
+- **Test agent**: [.github/test-agent.agent.md](.github/test-agent.agent.md) — Automated test generation
+
+**Remember**: No code is complete without tests. Coverage is non-negotiable.
+
+---
+
 ## Running Projects
 
 ```powershell
