@@ -54,6 +54,27 @@ pip install -r requirements-base.txt
 | `OLLAMA_EMBEDDING_MODEL` | Default embedding model | `nomic-embed-text` |
 | `LOG_LEVEL` | Logging verbosity | `INFO` |
 
+**Optional: HashiCorp Vault Integration**
+
+For teams with multiple developers, use **HashiCorp Vault** for centralized secret management:
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `VAULT_ENABLED` | Enable Vault (default: `false`) | `true` |
+| `VAULT_ADDR` | Vault server URL | `http://vault.example.com:8200` |
+| `VAULT_TOKEN` | Vault authentication token | `hvs.your_vault_token` |
+| `VAULT_SECRET_PATH` | Secret path (default: `ollama`) | `ollama` |
+| `VAULT_MOUNT_POINT` | KV mount point (default: `secret`) | `secret` |
+
+When `VAULT_ENABLED=true`, `OLLAMA_API_KEY` is retrieved from Vault with automatic fallback to `.env` if unreachable. See [docs/vault.md](../docs/vault.md) for setup instructions.
+
+**Credential Retrieval Strategy:**
+- `common/llm_factory.py` uses `common/vault.py::get_secret()` for API key retrieval
+- **Vault-first**: Tries Vault if enabled; logs success/failure
+- **Automatic fallback**: Uses `.env` if Vault unreachable or key not found
+- **Zero code changes**: Projects use `get_llm()` as before — credential source is transparent
+- **Backward compatible**: Vault disabled by default; existing workflows unchanged
+
 ---
 
 ## The `common/` Package — Always Use It

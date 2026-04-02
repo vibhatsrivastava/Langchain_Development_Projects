@@ -7,6 +7,10 @@ The factory reads configuration from environment variables defined in .env:
     OLLAMA_MODEL           — Default LLM model name (e.g. gpt-oss:20b)
     OLLAMA_EMBEDDING_MODEL — Default embedding model name (e.g. nomic-embed-text)
 
+Optional HashiCorp Vault integration:
+    When VAULT_ENABLED=true, OLLAMA_API_KEY is fetched from Vault with fallback to .env.
+    See docs/vault.md for setup instructions.
+
 Any project can override the model at call time:
     llm      = get_llm(model="llama3.1:8b")
     chat_llm = get_chat_llm(model="llama3.1:8b")
@@ -15,11 +19,12 @@ Any project can override the model at call time:
 import os
 from dotenv import load_dotenv
 from langchain_ollama import OllamaLLM, ChatOllama, OllamaEmbeddings
+from common.vault import get_secret
 
 load_dotenv()
 
 _BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-_API_KEY = os.getenv("OLLAMA_API_KEY", "")
+_API_KEY = get_secret(vault_key="OLLAMA_API_KEY", env_fallback_key="OLLAMA_API_KEY", default="")
 _DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 _DEFAULT_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
 

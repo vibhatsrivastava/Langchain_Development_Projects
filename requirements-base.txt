@@ -6,6 +6,7 @@ langgraph                 # For stateful multi-step agentic workflows
 
 # ─── Utilities ───────────────────────────────────────────────
 python-dotenv             # Load .env files
+hvac>=2.0.0               # HashiCorp Vault client for centralized secret management
 httpx                     # HTTP client used by langchain-ollama for auth headers
 
 # ─── Testing ─────────────────────────────────────────────────

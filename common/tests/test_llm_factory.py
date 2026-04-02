@@ -282,3 +282,81 @@ class TestLLMFactoryIntegration:
         
         assert llm_model == "model-a"
         assert chat_model == "model-b"
+
+
+@pytest.mark.integration
+class TestVaultIntegration:
+    """Integration tests for Vault secret management in llm_factory."""
+    
+    @patch("common.llm_factory.OllamaLLM")
+    @patch("common.vault.get_secret")
+    def test_llm_factory_uses_vault_for_api_key(self, mock_get_secret, mock_llm_class):
+        """LLM factory retrieves API key via Vault integration."""
+        # Simulate Vault returning a key
+        mock_get_secret.return_value = "vault-api-key-123"
+        
+        # Force module reload to trigger get_secret call
+        import importlib
+        import common.llm_factory
+        importlib.reload(common.llm_factory)
+        
+        # Now create LLM
+        from common.llm_factory import get_llm
+        llm = get_llm()
+        
+        # Verify get_secret was called correctly
+        mock_get_secret.assert_called_with(
+            vault_key="OLLAMA_API_KEY",
+            env_fallback_key="OLLAMA_API_KEY",
+            default=""
+        )
+    
+    @patch("common.llm_factory.OllamaLLM")
+    def test_vault_key_used_in_auth_headers(self, mock_llm_class):
+        """API key from Vault is used in authorization headers."""
+        # Patch _API_KEY directly to simulate Vault retrieval
+        with patch("common.llm_factory._API_KEY", "vault-retrieved-key"):
+            get_llm()
+            call_kwargs = mock_llm_class.call_args[1]
+            headers = call_kwargs["client_kwargs"]["headers"]
+            assert headers["Authorization"] == "Bearer vault-retrieved-key"
+    
+    @patch("common.llm_factory.ChatOllama")
+    def test_vault_fallback_to_env_works(self, mock_chat_class):
+        """When Vault fails, .env fallback key is used."""
+        # Simulate Vault fallback returning env value
+        with patch("common.llm_factory._API_KEY", "env-fallback-key"):
+            get_chat_llm()
+            call_kwargs = mock_chat_class.call_args[1]
+            headers = call_kwargs["client_kwargs"]["headers"]
+            assert headers["Authorization"] == "Bearer env-fallback-key"
+    
+    @patch("common.llm_factory.OllamaEmbeddings")
+    def test_vault_empty_key_results_in_no_auth(self, mock_embeddings_class):
+        """When Vault and .env have no key, no auth headers are set."""
+        with patch("common.llm_factory._API_KEY", ""):
+            get_embeddings()
+            call_kwargs = mock_embeddings_class.call_args[1]
+            headers = call_kwargs["client_kwargs"]["headers"]
+            assert headers == {}
+    
+    @patch("common.llm_factory.OllamaLLM")
+    @patch("common.llm_factory.ChatOllama")
+    @patch("common.llm_factory.OllamaEmbeddings")
+    def test_same_api_key_used_across_all_factories(
+        self, mock_embeddings, mock_chat, mock_llm
+    ):
+        """All factory functions use the same API key from Vault/env."""
+        with patch("common.llm_factory._API_KEY", "shared-api-key"):
+            get_llm()
+            get_chat_llm()
+            get_embeddings()
+            
+            # All should have the same API key in headers
+            llm_headers = mock_llm.call_args[1]["client_kwargs"]["headers"]
+            chat_headers = mock_chat.call_args[1]["client_kwargs"]["headers"]
+            embed_headers = mock_embeddings.call_args[1]["client_kwargs"]["headers"]
+            
+            assert llm_headers["Authorization"] == "Bearer shared-api-key"
+            assert chat_headers["Authorization"] == "Bearer shared-api-key"
+            assert embed_headers["Authorization"] == "Bearer shared-api-key"

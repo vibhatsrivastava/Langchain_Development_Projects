@@ -189,6 +189,56 @@ llm = get_llm(model="gpt-oss:20b")      # override per-call
 
 ---
 
+## Optional: HashiCorp Vault Integration
+
+For teams with multiple developers, you can use **HashiCorp Vault** to centrally manage API keys instead of distributing them via `.env` files.
+
+### Why Use Vault?
+
+- **Centralized secrets**: Store `OLLAMA_API_KEY` once in Vault, accessible to all developers on the network
+- **Automatic fallback**: If Vault is unreachable (offline, network issues), applications use `.env` as fallback
+- **Zero code changes**: Projects continue using `get_llm()` — credential retrieval is transparent
+- **Backward compatible**: Vault is disabled by default; existing workflows unchanged
+
+### Quick Setup
+
+1. **Ask your team lead for Vault credentials:**
+   - Vault server URL
+   - Vault authentication token
+
+2. **Enable Vault in your `.env`:**
+   ```env
+   VAULT_ENABLED=true
+   VAULT_ADDR=http://vault.example.com:8200
+   VAULT_TOKEN=hvs.your_vault_token_here
+   ```
+
+3. **Run your project** — API keys are automatically retrieved from Vault:
+   ```powershell
+   python projects/01_hello_langchain/src/main.py
+   ```
+
+4. **Verify in logs:**
+   ```
+   INFO | common.vault | Retrieved 'OLLAMA_API_KEY' from Vault (path: secret/ollama)
+   ```
+
+### Full Documentation
+
+For complete setup instructions, troubleshooting, and security best practices, see:
+
+**[docs/vault.md](vault.md)** — Comprehensive HashiCorp Vault integration guide
+
+Topics covered:
+- Setting up a local Vault dev server
+- Configuring a production Vault instance
+- Storing and rotating secrets
+- Testing Vault connectivity
+- Troubleshooting common issues
+- Advanced authentication methods (AppRole, etc.)
+
+---
+
 ## Per-Project Environment Overrides
 
 Each project may have its own `.env.example` for project-specific variables. When present, merge it with the root `.env`:
