@@ -21,32 +21,6 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 
 ---
 
-## Features
-
-### 🔐 HashiCorp Vault Integration
-
-**Centralized secret management** for teams working on Agentic AI projects. Instead of managing API keys in individual `.env` files, secrets are stored in Vault and retrieved automatically at runtime.
-
-**Key Benefits:**
-- **Centralized management**: Store `OLLAMA_API_KEY` once, accessible to all developers
-- **Automatic fallback**: Seamlessly falls back to `.env` if Vault is unreachable
-- **Zero code changes**: Projects use `get_llm()` as before — credential retrieval is transparent
-- **Backward compatible**: Vault is disabled by default; existing workflows unchanged
-- **Audit trail**: Track who accessed secrets and when
-
-> See [HashiCorp Vault Integration Guide](docs/vault.md) for setup instructions.
-
-### 🏭 Common LLM Factory
-
-Shared `common/llm_factory.py` provides three builder functions for consistent LLM access across all projects:
-- `get_llm()` — Simple string chains and single-turn prompts
-- `get_chat_llm()` — Agents, memory, tool-calling, JSON mode
-- `get_embeddings()` — RAG, vector stores, similarity search
-
-> See [Common LLM Factory Guide](docs/llm_factory.md) for detailed usage and examples.
-
----
-
 ## Projects
 
 | # | Project | Description |
@@ -111,6 +85,32 @@ Langchain_Development_Projects/
 ├── requirements-base.txt      # Shared base dependencies
 └── README.md
 ```
+
+---
+
+## Features
+
+### 🔐 HashiCorp Vault Integration
+
+**Centralized secret management** for teams working on Agentic AI projects. Instead of managing API keys in individual `.env` files, secrets are stored in Vault and retrieved automatically at runtime.
+
+**Key Benefits:**
+- **Centralized management**: Store `OLLAMA_API_KEY` once, accessible to all developers
+- **Automatic fallback**: Seamlessly falls back to `.env` if Vault is unreachable
+- **Zero code changes**: Projects use `get_llm()` as before — credential retrieval is transparent
+- **Backward compatible**: Vault is disabled by default; existing workflows unchanged
+- **Audit trail**: Track who accessed secrets and when
+
+> See [HashiCorp Vault Integration Guide](docs/vault.md) for setup instructions.
+
+### 🏭 Common LLM Factory
+
+Shared `common/llm_factory.py` provides three builder functions for consistent LLM access across all projects:
+- `get_llm()` — Simple string chains and single-turn prompts
+- `get_chat_llm()` — Agents, memory, tool-calling, JSON mode
+- `get_embeddings()` — RAG, vector stores, similarity search
+
+> See [Common LLM Factory Guide](docs/llm_factory.md) for detailed usage and examples.
 
 ---
 
