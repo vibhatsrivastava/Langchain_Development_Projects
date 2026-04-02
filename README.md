@@ -88,6 +88,23 @@ Langchain_Development_Projects/
 
 ---
 
+## Adding a New Project
+
+Each project under `projects/` should follow the standard scaffold:
+
+```
+projects/NN_project_name/
+├── src/
+│   └── main.py
+├── requirements.txt      # Project-specific deps (in addition to base)
+├── .env.example          # Any project-specific env vars
+└── README.md             # Project description, usage, sample output
+```
+
+See [docs/contributing.md](docs/contributing.md) for the full conventions.
+
+---
+
 ## Features
 
 ### 🔐 HashiCorp Vault Integration
@@ -122,23 +139,6 @@ Shared `common/llm_factory.py` provides three builder functions for consistent L
 - [HashiCorp Vault](docs/vault.md) — Centralized secret management setup and configuration
 - [Prerequisites](docs/prerequisites.md) — System requirements
 - [Contributing](docs/contributing.md) — How to add a new project
-
----
-
-## Adding a New Project
-
-Each project under `projects/` should follow the standard scaffold:
-
-```
-projects/NN_project_name/
-├── src/
-│   └── main.py
-├── requirements.txt      # Project-specific deps (in addition to base)
-├── .env.example          # Any project-specific env vars
-└── README.md             # Project description, usage, sample output
-```
-
-See [docs/contributing.md](docs/contributing.md) for the full conventions.
 
 ---
 
