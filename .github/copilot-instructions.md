@@ -168,9 +168,10 @@ projects/NN_project_name/
 ├── src/
 │   └── main.py            # Entry point; uses common/ imports
 ├── requirements.txt       # Project-specific deps only (base deps in root)
-├── .env.example           # Any project-specific env vars
 └── README.md              # Description, usage, sample output
 ```
+
+**Important**: Do NOT create project-level `.env` or `.env.example` files. All environment variables must be defined in the root-level `.env.example` and documented in the project's README if they're project-specific.
 
 ---
 
@@ -308,6 +309,7 @@ python src/main.py
 
 - **Import errors from `common/`** — Always add the `sys.path.insert` at the top of project scripts before importing from `common/`
 - **`.env` not found** — `llm_factory.py` calls `load_dotenv()` which searches upward; ensure `.env` exists at repo root
+- **Project-level `.env` files** — NEVER create `.env` or `.env.example` files inside project directories; all environment configuration belongs in the root `.env` file. `load_dotenv()` searches upward from `common/` and will find the root `.env` automatically.
 - **Wrong LLM class** — Use `get_chat_llm()` (not `get_llm()`) for agents and LangGraph nodes; `OllamaLLM` does not support tool calling
 - **Model not available** — Run `ollama list` to see downloaded models; run `ollama pull <model>` if missing
 - **`OLLAMA_API_KEY` left blank for remote** — Remote Ollama servers require the Bearer token; check `.env`
