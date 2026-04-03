@@ -34,12 +34,50 @@ def mock_llm(monkeypatch):
     Usage:
         def test_my_chain(mock_llm):
             mock_llm.invoke.return_value = "Custom response"
-            llm = get_llm()  # Returns the mock
-            result = llm.invoke("test prompt")
+            result = mock_llm.invoke("test prompt")
             assert result == "Custom response"
     """
-    mock = Mock()
-    mock.invoke.return_value = "Mocked LLM response"
+    # Complete custom LLM mock that works with LCEL chains
+    class MockLLM:
+        """Custom mock that behaves like OllamaLLM for testing."""
+        
+        class InvokeMock:
+            """Callable mock for invoke method."""
+            def __init__(self):
+                self.return_value = "Mocked LLM response"
+                self.call_count = 0
+                self.call_args = None
+                self.call_args_list = []
+                
+            def __call__(self, *args, **kwargs):
+                self.call_count += 1
+                self.call_args = (args, kwargs)
+                self.call_args_list.append((args, kwargs))
+                return self.return_value
+                
+            def assert_called_once(self):
+                assert self.call_count == 1, f"Expected 1 call, got {self.call_count}"
+                
+            def reset_mock(self):
+                self.call_count = 0
+                self.call_args_list = []
+                self.call_args = None
+        
+        def __init__(self):
+            self.invoke = self.InvokeMock()
+            
+        def __call__(self, *args, **kwargs):
+            """Make MockLLM callable so LCEL chains can use it."""
+            return self.invoke(*args, **kwargs)
+            
+        def __getattr__(self, name):
+            # Don't return mocks for special attributes used by introspection
+            if name.startswith('_') or name in ('__signature__', '__wrapped__'):
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+            # Return mocks for other attributes
+            return Mock()
+    
+    mock = MockLLM()
     monkeypatch.setattr("langchain_ollama.OllamaLLM", lambda **kwargs: mock)
     return mock
 

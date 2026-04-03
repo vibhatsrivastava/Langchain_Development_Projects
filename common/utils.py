@@ -25,6 +25,7 @@ def get_logger(name: str) -> logging.Logger:
     logging.basicConfig(
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         level=getattr(logging, level, logging.INFO),
+        force=True,  # Reconfigure even if handlers already exist (Python 3.8+)
     )
     return logging.getLogger(name)
 

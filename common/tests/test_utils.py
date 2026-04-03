@@ -21,6 +21,21 @@ import logging
 from common.utils import get_logger, require_env
 
 
+@pytest.fixture
+def reset_logging():
+    """Reset logging configuration before each test to allow basicConfig() to work."""
+    # Clear all handlers from root logger
+    root = logging.getLogger()
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+    # Reset root logger level
+    root.setLevel(logging.WARNING)
+    yield
+    # Clean up after test
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+
+
 @pytest.mark.unit
 class TestGetLogger:
     """Unit tests for get_logger()."""
@@ -31,39 +46,38 @@ class TestGetLogger:
         assert isinstance(logger, logging.Logger)
         assert logger.name == "test_module"
     
-    def test_respects_log_level_from_env_debug(self, monkeypatch):
+    def test_respects_log_level_from_env_debug(self, monkeypatch, reset_logging):
         """Logger uses DEBUG level when LOG_LEVEL=DEBUG."""
         monkeypatch.setenv("LOG_LEVEL", "DEBUG")
         logger = get_logger("test_debug")
-        # Logger level is set during basicConfig call
-        # Check the root logger's level
-        assert logging.getLogger().level == logging.DEBUG
+        # Check the logger's effective level (considers root + handlers)
+        assert logger.getEffectiveLevel() == logging.DEBUG
     
-    def test_respects_log_level_from_env_warning(self, monkeypatch):
+    def test_respects_log_level_from_env_warning(self, monkeypatch, reset_logging):
         """Logger uses WARNING level when LOG_LEVEL=WARNING."""
         monkeypatch.setenv("LOG_LEVEL", "WARNING")
         logger = get_logger("test_warning")
-        assert logging.getLogger().level == logging.WARNING
+        assert logger.getEffectiveLevel() == logging.WARNING
     
-    def test_respects_log_level_from_env_error(self, monkeypatch):
+    def test_respects_log_level_from_env_error(self, monkeypatch, reset_logging):
         """Logger uses ERROR level when LOG_LEVEL=ERROR."""
         monkeypatch.setenv("LOG_LEVEL", "ERROR")
         logger = get_logger("test_error")
-        assert logging.getLogger().level == logging.ERROR
+        assert logger.getEffectiveLevel() == logging.ERROR
     
-    def test_defaults_to_info_when_log_level_unset(self, monkeypatch):
+    def test_defaults_to_info_when_log_level_unset(self, monkeypatch, reset_logging):
         """Logger defaults to INFO when LOG_LEVEL is not set."""
         monkeypatch.delenv("LOG_LEVEL", raising=False)
         logger = get_logger("test_default")
         # Should default to INFO
-        assert logging.getLogger().level == logging.INFO
+        assert logger.getEffectiveLevel() == logging.INFO
     
-    def test_handles_invalid_log_level_gracefully(self, monkeypatch):
+    def test_handles_invalid_log_level_gracefully(self, monkeypatch, reset_logging):
         """Logger defaults to INFO when LOG_LEVEL is invalid."""
         monkeypatch.setenv("LOG_LEVEL", "INVALID_LEVEL")
         logger = get_logger("test_invalid")
         # Should fall back to INFO (default in getattr)
-        assert logging.getLogger().level == logging.INFO
+        assert logger.getEffectiveLevel() == logging.INFO
     
     def test_logger_name_is_preserved(self):
         """get_logger() preserves the name passed to it."""
