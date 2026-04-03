@@ -7,141 +7,272 @@
 
 A curated **monorepo** of Agentic AI applications built with [LangChain](https://docs.langchain.com/) and [Ollama](https://ollama.com/). Each project is self-contained and demonstrates a specific use case, integration, or agentic pattern.
 
+> **TL;DR**: Production-ready LangChain projects with SDK tooling, shared utilities, 90% test coverage, and optional Vault integration. Get from zero to running agent in <5 minutes.
+
 ---
 
-## Stack
+## What You Get
+
+### 🎯 Technology Stack
 
 | Component | Technology |
 |-----------|-----------|
-| LLM Framework | [LangChain](https://docs.langchain.com/) + [LangGraph](https://langchain-ai.github.io/langgraph/) |
-| LLM Runtime | [Ollama](https://ollama.com/) (remote hosted or local) |
-| Default Model | `gpt-oss:20b` (20B parameter OSS model) |
-| Embeddings | `nomic-embed-text` via Ollama |
-| Secret Management | [HashiCorp Vault](https://www.vaultproject.io/) (optional) |
+| **LLM Framework** | [LangChain](https://docs.langchain.com/) + [LangGraph](https://langchain-ai.github.io/langgraph/) |
+| **LLM Runtime** | [Ollama](https://ollama.com/) (remote hosted or local) |
+| **Default Model** | `gpt-oss:20b` (20B parameter OSS model) |
+| **Embeddings** | `nomic-embed-text` via Ollama |
+| **Secret Management** | [HashiCorp Vault](https://www.vaultproject.io/) (optional) |
+| **Testing** | pytest with 90% coverage requirement |
+
+### ⚡ Key Features
+
+- **🚀 SDK Scaffolding** — Generate production-ready projects in <2 minutes with `langchain-dev` CLI
+- **🏭 Shared Architecture** — Reusable LLM factory, prompts, utilities across all projects
+- **🔌 Composable Integrations** — Mix-and-match vector stores (pgvector, Chroma, FAISS), caching (Redis), observability (Langfuse)
+- **🧪 Built-in Testing** — Pre-configured pytest fixtures, mocked LLMs, 90% coverage templates
+- **🔐 Enterprise-Ready** — Optional Vault integration, rate limiting, retry logic, token counting
+- **📚 Learning Resources** — Quick-reference guides for Agentic AI, ReAct patterns, RAG pipelines
 
 ---
 
-## Projects
+## Available Projects
 
-| # | Project | Description |
-|---|---------|-------------|
-| 01 | [Hello LangChain](projects/01_hello_langchain/) | Minimal working example — chain setup, LLM call, prompt template |
+| # | Project | Type | Description |
+|---|---------|------|-------------|
+| 01 | [Hello LangChain](projects/01_hello_langchain/) | LCEL | Minimal working example — chain setup, LLM call, prompt template |
 
-> More projects will be added to this table as they are developed.
+> **More projects coming soon!** Use the SDK to create your own: `langchain-dev new-project 02_my_agent --arch langgraph`
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
-```bash
-# 1. Clone the repo
+> **Prerequisites**: Ensure you have [Python 3.10+, Ollama access, and Git](docs/prerequisites.md) installed.
+
+### Path 1: Using SDK (Recommended)
+
+**Fastest way to get started** — scaffold a new project in <2 minutes:
+
+```powershell
+# 1. Clone and navigate to repo
 git clone https://github.com/vibhatsrivastava/Langchain_Development_Projects.git
 cd Langchain_Development_Projects
 
-# 2. Set up environment variables
+# 2. Set up environment
 cp .env.example .env
 # Edit .env with your OLLAMA_BASE_URL and OLLAMA_API_KEY
 
-# 3. Create a virtual environment (prevents dependency conflicts between projects)
-python -m venv venv
+# 3. Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1  # Windows PowerShell
+# source .venv/bin/activate  # macOS/Linux
 
-# 4. Activate the virtual environment
-# Windows (PowerShell):
-venv\Scripts\Activate.ps1
-# Windows (Command Prompt):
-# venv\Scripts\activate.bat
-# macOS / Linux:
-# source venv/bin/activate
-
-# 5. Install base dependencies
+# 4. Install SDK and base dependencies
 pip install -r requirements-base.txt
+pip install -e cli/
 
-# 6. Run a project
-cd projects/01_hello_langchain
+# 5. Scaffold a new project
+langchain-dev new-project 02_my_rag_app --arch lcel --integrations pgvector,langfuse
+
+# 6. Run your project
+cd projects/02_my_rag_app
 pip install -r requirements.txt
 python src/main.py
 ```
 
-See [docs/getting_started.md](docs/getting_started.md) for full setup instructions.
+**What the SDK generates:**
+- ✅ LCEL/LangGraph/Custom architecture templates
+- ✅ Integration code (pgvector, Redis, Langfuse, Chroma, FAISS)
+- ✅ Test fixtures with 90% coverage template
+- ✅ Pre-configured `.env.example` with all required variables
+- ✅ Production-ready utilities (rate limiting, retry logic, token counting)
+
+**Benefits**: 15 minutes → <2 minutes per project | Zero boilerplate | Composable integrations
+
+> See **[docs/sdk.md](docs/sdk.md)** for complete SDK documentation, integration catalog, and advanced usage.
 
 ---
 
-## Repository Structure
+### Path 2: Manual Setup (Without SDK)
+
+**For running existing projects** like `01_hello_langchain`:
+
+```bash
+# 1-3. Clone, configure .env, create venv (same as Path 1)
+
+# 4. Install base dependencies only
+pip install -r requirements-base.txt
+
+# 5. Navigate to project and install project-specific deps
+cd projects/01_hello_langchain
+pip install -r requirements.txt
+
+# 6. Run the project
+python src/main.py
+```
+
+> See [docs/getting_started.md](docs/getting_started.md) for detailed setup instructions, local Ollama configuration, and troubleshooting.
+
+---
+
+## 📁 How It Works
+
+### Repository Structure
 
 ```
 Langchain_Development_Projects/
-├── projects/                  # Individual AI projects (self-contained)
-│   └── 01_hello_langchain/
-├── common/                    # Shared utilities used across projects
-│   ├── llm_factory.py         # Reusable LLM & embeddings builders
-│   ├── utils.py               # Logging, env helpers
-│   └── prompts/               # Shared prompt templates
-├── docs/                      # Documentation
-│   ├── getting_started.md
-│   ├── models.md              # Model reference + how to swap models
-│   ├── prerequisites.md
-│   └── contributing.md
-├── .env.example               # Environment variable template
+├── cli/                       # 🚀 SDK for project scaffolding
+│   ├── langchain_dev/         # CLI implementation
+│   └── templates/             # LCEL/LangGraph/Custom templates
+├── projects/                  # 📦 Individual AI projects (self-contained)
+│   └── 01_hello_langchain/    # Example: minimal LCEL chain
+├── common/                    # 🏭 Shared utilities (import from any project)
+│   ├── llm_factory.py         # LLM builders: get_llm(), get_chat_llm(), get_embeddings()
+│   ├── vault.py               # Optional Vault integration for secret management
+│   ├── utils.py               # Logging, env helpers (get_logger, require_env)
+│   ├── retry.py               # Retry logic with exponential backoff
+│   ├── rate_limiter.py        # Rate limiting for API calls
+│   ├── token_counter.py       # Token usage tracking
+│   └── prompts/               # Shared prompt templates (QA, RAG, ReAct)
+├── docs/                      # 📚 Comprehensive documentation
+├── Quick-Reference/           # 🎓 Learning resources (Agentic AI, ReAct, RAG, Ollama)
+├── Playground/                # 🧪 Practice scenarios and implementations
+├── .env.example               # Environment variable template (copy to .env)
 ├── requirements-base.txt      # Shared base dependencies
-└── README.md
+└── pytest.ini                 # Test configuration (90% coverage threshold)
 ```
 
 ---
 
-## Adding a New Project
+### Core Architecture
 
-Each project under `projects/` should follow the standard scaffold:
+#### 🏭 Common LLM Factory
+
+**All projects use the shared `common/llm_factory.py`** for consistent LLM access. Never instantiate LangChain classes directly.
+
+```python
+from common.llm_factory import get_llm, get_chat_llm, get_embeddings
+
+# Simple string chains, single-turn prompts
+llm = get_llm()  
+
+# Agents, memory, tool-calling, JSON mode, LangGraph nodes
+chat = get_chat_llm(format="json", model="llama3.1:8b")  
+
+# RAG, vector stores, similarity search
+embeddings = get_embeddings()  
+```
+
+**Why use it?**
+- ✅ Automatic `.env` configuration (reads `OLLAMA_BASE_URL`, `OLLAMA_API_KEY`, `OLLAMA_MODEL`)
+- ✅ Optional Vault integration (automatic fallback to `.env`)
+- ✅ Consistent error handling across projects
+- ✅ Easy model swapping without code changes
+
+> See [docs/llm_factory.md](docs/llm_factory.md) for detailed usage guide and examples.
+
+---
+
+#### 🔐 HashiCorp Vault Integration (Optional)
+
+**Enterprise secret management** for teams. Store `OLLAMA_API_KEY` centrally instead of in individual `.env` files.
+
+**Key Benefits:**
+- **Centralized management**: One secret accessible to all developers
+- **Automatic fallback**: Seamlessly falls back to `.env` if Vault unreachable
+- **Zero code changes**: Projects use `get_llm()` as before — transparent credential retrieval
+- **Audit trail**: Track who accessed secrets and when
+
+**Quick Setup:**
+```bash
+# Enable in .env
+VAULT_ENABLED=true
+VAULT_ADDR=http://vault.example.com:8200
+VAULT_TOKEN=hvs.your_vault_token
+```
+
+> Vault is **disabled by default**. See [docs/vault.md](docs/vault.md) for complete setup.
+
+---
+
+#### 🧪 Testing Philosophy
+
+**All code must maintain ≥90% test coverage** (enforced via `pytest.ini`).
+
+```powershell
+# Run tests with coverage report
+pytest --cov --cov-report=term-missing
+
+# Verify ≥90% coverage (fails if below threshold)
+pytest --cov --cov-fail-under=90
+```
+
+**Testing conventions:**
+- All LLM/Ollama calls **must be mocked** (no real API calls in tests)
+- Use shared fixtures from `common/tests/conftest.py` (`mock_llm`, `mock_chat_llm`, `mock_embeddings`)
+- SDK auto-generates test templates with 90% coverage baseline
+
+> See [docs/testing.md](docs/testing.md) for comprehensive testing guide and patterns.
+
+---
+
+### Project Scaffold
+
+Each project under `projects/` follows this standard structure:
 
 ```
 projects/NN_project_name/
 ├── src/
-│   └── main.py
-├── requirements.txt      # Project-specific deps (in addition to base)
-├── .env.example          # Any project-specific env vars
-└── README.md             # Project description, usage, sample output
+│   └── main.py            # Entry point (uses common/ imports)
+├── tests/
+│   ├── conftest.py        # Project-specific fixtures
+│   └── test_main.py       # ≥90% coverage tests
+├── requirements.txt       # Project-specific deps (delta on base)
+└── README.md              # Description, usage, sample output
 ```
 
-See [docs/contributing.md](docs/contributing.md) for the full conventions.
+> **Never create project-level `.env` files.** All environment variables belong in root `.env.example` and are documented in project README if project-specific.
 
 ---
 
-## Features
+## 📚 Documentation
 
-### 🔐 HashiCorp Vault Integration
+| Guide | Description | Best For |
+|-------|-------------|----------|
+| **[Getting Started](docs/getting_started.md)** | Environment setup, local vs. hosted Ollama, troubleshooting | First-time setup, Ollama configuration |
+| **[Developer SDK](docs/sdk.md)** | CLI documentation, integration catalog, advanced scaffolding | Creating new projects, using integrations |
+| **[LLM Factory](docs/llm_factory.md)** | `get_llm()` vs `get_chat_llm()` guide, model swapping, usage patterns | Choosing the right LLM builder, debugging |
+| **[Models](docs/models.md)** | Model reference, alternatives, swapping guide, class comparison | Switching models, understanding capabilities |
+| **[Testing](docs/testing.md)** | Testing conventions, mocking patterns, coverage requirements | Writing tests, achieving 90% coverage |
+| **[HashiCorp Vault](docs/vault.md)** | Vault setup, configuration, team workflows | Enterprise deployments, secret management |
+| **[Contributing](docs/contributing.md)** | Project naming, scaffold requirements, conventions | Adding new projects, following standards |
+| **[Prerequisites](docs/prerequisites.md)** | System requirements, installation guides | Initial setup, dependency installation |
 
-**Centralized secret management** for teams working on Agentic AI projects. Instead of managing API keys in individual `.env` files, secrets are stored in Vault and retrieved automatically at runtime.
+### 🎓 Learning Resources
 
-**Key Benefits:**
-- **Centralized management**: Store `OLLAMA_API_KEY` once, accessible to all developers
-- **Automatic fallback**: Seamlessly falls back to `.env` if Vault is unreachable
-- **Zero code changes**: Projects use `get_llm()` as before — credential retrieval is transparent
-- **Backward compatible**: Vault is disabled by default; existing workflows unchanged
-- **Audit trail**: Track who accessed secrets and when
-
-> See [HashiCorp Vault Integration Guide](docs/vault.md) for setup instructions.
-
-### 🏭 Common LLM Factory
-
-Shared `common/llm_factory.py` provides three builder functions for consistent LLM access across all projects:
-- `get_llm()` — Simple string chains and single-turn prompts
-- `get_chat_llm()` — Agents, memory, tool-calling, JSON mode
-- `get_embeddings()` — RAG, vector stores, similarity search
-
-> See [Common LLM Factory Guide](docs/llm_factory.md) for detailed usage and examples.
+| Resource | Topic |
+|----------|-------|
+| [Quick-Reference/01_What_Is_Agentic_AI.md](Quick-Reference/01_What_Is_Agentic_AI.md) | Agentic AI concepts, definitions, patterns |
+| [Quick-Reference/02_ReAct_Pattern_Deep_Dive.md](Quick-Reference/02_ReAct_Pattern_Deep_Dive.md) | Reason + Act pattern, implementation guide |
+| [Quick-Reference/03_RAG_Retrieval_Augmented_Generation.md](Quick-Reference/03_RAG_Retrieval_Augmented_Generation.md) | RAG pipeline, vector stores, embeddings |
+| [Quick-Reference/04_Ollama.md](Quick-Reference/04_Ollama.md) | Ollama setup, API reference, model management |
 
 ---
 
-## Documentation
+## 🤝 Contributing
 
-- [Getting Started](docs/getting_started.md) — Setup for hosted or local Ollama
-- [Common LLM Factory](docs/llm_factory.md) — LLM builder functions and usage guide
-- [Models](docs/models.md) — Default model, alternatives, how to swap, and LLM class reference
-- [HashiCorp Vault](docs/vault.md) — Centralized secret management setup and configuration
-- [Prerequisites](docs/prerequisites.md) — System requirements
-- [Contributing](docs/contributing.md) — How to add a new project
+We welcome contributions! To add a new project:
+
+1. **Use the SDK** (recommended): `langchain-dev new-project NN_your_project --arch [lcel|langgraph|custom]`
+2. **Follow naming convention**: `NN_descriptive_name` (e.g., `02_pdf_qa_agent`)
+3. **Include tests**: Achieve ≥90% coverage (`pytest --cov --cov-fail-under=90`)
+4. **Update this README**: Add your project to the [Available Projects](#available-projects) table
+5. **Document thoroughly**: Write a comprehensive README in your project directory
+
+See [docs/contributing.md](docs/contributing.md) for complete guidelines.
 
 ---
 
-## License
+## 📄 License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — Free to use, modify, and distribute.

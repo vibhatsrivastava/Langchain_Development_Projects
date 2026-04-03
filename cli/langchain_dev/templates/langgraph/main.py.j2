@@ -1,0 +1,86 @@
+{# Main.py template for LangGraph architecture #}
+"""
+main.py — {{ project_description }}
+
+{{ architecture_name }} implementation using LangGraph.
+"""
+
+import sys
+import os
+
+# Add repo root to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
+from langgraph.prebuilt import create_react_agent
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage
+from common.llm_factory import get_chat_llm
+from common.utils import get_logger
+{% if has_observability %}
+from common.integrations.observability import init_tracing
+{% endif %}
+
+logger = get_logger(__name__)
+
+
+@tool
+def sample_tool(query: str) -> str:
+    """
+    Sample tool for demonstration.
+    
+    Args:
+        query: Input query string
+    
+    Returns:
+        Tool response
+    """
+    logger.info(f"sample_tool called with query: {query}")
+    return f"Tool result for: {query}"
+
+
+def create_agent():
+    """
+    Create LangGraph ReAct agent.
+    
+    Returns:
+        Compiled agent graph
+    """
+    # Get chat LLM (required for agents)
+    llm = get_chat_llm()
+    
+    # Define tools
+    tools = [sample_tool]
+    
+    # Create ReAct agent
+    agent = create_react_agent(model=llm, tools=tools)
+    
+    return agent
+
+
+def main():
+    """Main entry point."""
+    logger.info("Starting {{ project_name }}...")
+    
+    {% if has_observability %}
+    # Initialize tracing for observability
+    init_tracing()
+    {% endif %}
+    
+    # Create agent
+    agent = create_agent()
+    
+    # Example invocation
+    user_input = "What is LangGraph?"
+    logger.info(f"User input: {user_input}")
+    
+    result = agent.invoke({"messages": [HumanMessage(content=user_input)]})
+    answer = result["messages"][-1].content
+    
+    logger.info(f"Agent answer: {answer}")
+    
+    print(f"\nUser: {user_input}")
+    print(f"Agent: {answer}")
+
+
+if __name__ == "__main__":
+    main()

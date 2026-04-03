@@ -239,13 +239,8 @@ Topics covered:
 
 ---
 
-## Per-Project Environment Overrides
+## Environment Variable Management
 
-Each project may have its own `.env.example` for project-specific variables. When present, merge it with the root `.env`:
+**All environment variables are configured in the root `.env` file.** The `load_dotenv()` function automatically searches upward from the `common/` directory and finds the root `.env` file, making it available to all projects.
 
-```bash
-# From inside a project directory
-cat ../../.env.example > .env
-cat .env.example >> .env
-# Then edit .env with your values
-```
+Project-specific variables (if any) are documented in the project's `README.md` and added to the root `.env.example` with clear comments indicating which project uses them.

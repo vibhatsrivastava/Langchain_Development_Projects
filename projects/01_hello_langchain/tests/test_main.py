@@ -228,10 +228,11 @@ class TestLCELComposition:
         
         # Assert
         mock_llm.invoke.assert_called_once()
-        # The mock receives the formatted prompt string
+        # The mock receives the formatted prompt (StringPromptValue object from LCEL)
         call_arg = mock_llm.invoke.call_args[0][0]
-        assert isinstance(call_arg, str)
-        assert "test value" in call_arg
+        # StringPromptValue has a .text attribute with the actual string
+        assert hasattr(call_arg, 'text') or isinstance(call_arg, str)
+        assert "test value" in str(call_arg)
 
 
 @pytest.mark.unit
