@@ -23,6 +23,10 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 
 ## Projects
 
+- **[06_06_test_with_integrations](projects/06_test_with_integrations/README.md)** — LCEL Chain (pgvector, langfuse)
+
+- **[05_05_test_basic](projects/05_test_basic/README.md)** — LCEL Chain (None)
+
 | # | Project | Description |
 |---|---------|-------------|
 | 01 | [Hello LangChain](projects/01_hello_langchain/) | Minimal working example — chain setup, LLM call, prompt template |
@@ -63,6 +67,36 @@ python src/main.py
 ```
 
 See [docs/getting_started.md](docs/getting_started.md) for full setup instructions.
+
+---
+
+## 🚀 Developer SDK (Recommended)
+
+**Accelerate development** with the `langchain-dev` CLI tool that automates project scaffolding:
+
+```powershell
+# Install SDK (one-time setup)
+pip install -e cli/
+
+# Create new project in <2 minutes
+langchain-dev new-project 05_my_rag_app --arch lcel --integrations pgvector,langfuse
+
+# ✅ Generates complete project structure with:
+#   - LCEL/LangGraph/Custom architecture templates
+#   - Integration code (pgvector, Redis, Langfuse, etc.)
+#   - Test fixtures with 90% coverage template
+#   - .env.example with all required variables
+#   - README with setup instructions
+```
+
+**Benefits:**
+- ⚡ **15 minutes → <2 minutes** per project
+- 🎯 **Zero boilerplate** — no more copy-paste from existing projects
+- 🔌 **Composable integrations** — mix-and-match vector stores, caching, observability
+- 🧪 **Built-in testing** — pytest fixtures for all integrations
+- 📚 **Production-ready** — rate limiting, retry logic, token counting included
+
+See **[docs/sdk.md](docs/sdk.md)** for complete SDK documentation, integration guide, and roadmap.
 
 ---
 
