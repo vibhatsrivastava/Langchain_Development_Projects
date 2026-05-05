@@ -118,7 +118,7 @@ def ask(agent, question: str) -> str:
     return result["messages"][-1].content
 
 
-def main():
+def main(argv=None):
     """Main entry point — supports CLI city argument, interactive mode, or default demo queries."""
     parser = argparse.ArgumentParser(description="Weather Reporting Agent")
     parser.add_argument(
@@ -131,7 +131,7 @@ def main():
         action="store_true",
         help="Start an interactive prompt loop to query any city",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logger.info("Starting Weather Reporting Agent...")
     agent = build_agent()

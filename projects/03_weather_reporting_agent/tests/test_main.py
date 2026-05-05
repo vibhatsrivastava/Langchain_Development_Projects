@@ -160,7 +160,7 @@ class TestMain:
             "messages": [AIMessage(content="Mocked weather answer")]
         }
         with patch("src.main.build_agent", return_value=mock_agent):
-            main()
+            main([])
 
         captured = capsys.readouterr()
         assert "Tokyo" in captured.out
