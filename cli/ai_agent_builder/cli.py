@@ -12,11 +12,10 @@ from typing import Optional
 import click
 from dotenv import load_dotenv
 
-from .version import __version__
-from .config import BASE_ARCHITECTURES, PROJECT_NAME_PATTERN, PROJECT_NAME_EXAMPLE
+from .config import BASE_ARCHITECTURES, PROJECT_NAME_EXAMPLE, PROJECT_NAME_PATTERN
+from .integrations import get_integration, list_integrations
 from .scaffold import ProjectScaffolder
-from .integrations import list_integrations, get_integration
-
+from .version import __version__
 
 # Load environment variables
 load_dotenv()

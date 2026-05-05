@@ -4,9 +4,7 @@ config.py — Configuration and constants for AI Agent Builder CLI.
 Defines base architectures, project patterns, and default configurations.
 """
 
-import os
 from pathlib import Path
-from typing import Dict, List, Any
 
 # Package root directory
 CLI_ROOT = Path(__file__).parent.parent
@@ -118,40 +116,40 @@ PYTEST_CONFIG = {
 def get_project_number(project_name: str) -> str:
     """
     Extract project number from project name.
-    
+
     Args:
         project_name: Project name (e.g., "05_my_project")
-    
+
     Returns:
         Project number (e.g., "05")
-    
+
     Raises:
         ValueError: If project name doesn't match pattern
     """
     import re
-    
+
     match = re.match(r"^(\d{2})_", project_name)
     if not match:
         raise ValueError(
             f"Project name '{project_name}' doesn't match pattern. "
             f"Expected: {PROJECT_NAME_EXAMPLE}"
         )
-    
+
     return match.group(1)
 
 
 def get_project_description(project_name: str) -> str:
     """
     Generate a human-readable project description from the name.
-    
+
     Args:
         project_name: Project name (e.g., "05_rag_pgvector")
-    
+
     Returns:
         Description (e.g., "RAG with pgvector")
     """
     # Remove number prefix
     name_without_number = project_name.split("_", 1)[1] if "_" in project_name else project_name
-    
+
     # Replace underscores with spaces and title case
     return name_without_number.replace("_", " ").title()

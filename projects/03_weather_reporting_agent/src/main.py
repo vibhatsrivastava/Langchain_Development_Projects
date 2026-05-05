@@ -8,7 +8,6 @@ Uses the Open-Meteo API (free, no API key required).
 import argparse
 import sys
 import requests
-from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
@@ -26,14 +25,6 @@ STRICT RULES:
 - If the tool says "12.4°C", output "12.4°C". Do NOT say "around 12°C" or any other value.
 - Populate the structured response fields only with values taken directly from the tool output.
 """
-
-
-class WeatherReport(BaseModel):
-    city: str = Field(description="City name exactly as returned by the tool")
-    temperature_celsius: float = Field(description="Temperature exactly as returned by the tool")
-    conditions: str = Field(description="Weather description exactly as returned by the tool")
-    wind_speed_kmh: float = Field(description="Wind speed exactly as returned by the tool")
-    summary: str = Field(description="One sentence using only the above fields, no invented data")
 
 
 # WMO Weather Code → human-readable description
@@ -124,12 +115,7 @@ def ask(agent, question: str) -> str:
         Formatted weather report sourced strictly from tool output
     """
     result = agent.invoke({"messages": [HumanMessage(content=question)]})
-    report: WeatherReport = result["structured_response"]
-    return (
-        f"{report.city}: {report.temperature_celsius}°C, "
-        f"{report.conditions}, wind {report.wind_speed_kmh} km/h.\n"
-        f"{report.summary}"
-    )
+    return result["messages"][-1].content
 
 
 def main():
