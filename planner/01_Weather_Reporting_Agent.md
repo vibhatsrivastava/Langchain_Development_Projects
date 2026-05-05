@@ -337,7 +337,7 @@ HumanMessage
 
 > **Note on `common` import**: The `uv` editable install does not always create the `.pth` file needed for `import common` to work. If you get `ModuleNotFoundError: No module named 'common'`, manually create:
 > `projects/03_weather_reporting_agent/.venv/Lib/site-packages/ai_agent_common.pth`
-> containing the absolute repo root path (e.g. `C:\Users\you\Langchain_Development_Projects`).
+> containing the absolute repo root path (e.g. `C:\Users\you\Agentic_AI_Development_Framework`).
 
 ### Step 1 — Install Additional Dependencies
 
@@ -858,5 +858,5 @@ For the question _"What is the weather like in Tokyo right now?"_:
 
 ---
 
-*Back to Playground index → [`Playground/`](../Playground/)*  
+*Back to planner index → [`planner/`](../planner/)*  
 *Related Quick-Reference → [02_ReAct_Pattern_Deep_Dive.md](../Quick-Reference/02_ReAct_Pattern_Deep_Dive.md)*

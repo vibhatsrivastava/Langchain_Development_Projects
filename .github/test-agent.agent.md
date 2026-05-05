@@ -302,7 +302,7 @@ Generate additional tests to cover these gaps.
 ### Repository Structure
 
 ```
-Langchain_Development_Projects/
+Agentic_AI_Development_Framework/
 ├── common/
 │   ├── llm_factory.py
 │   ├── utils.py

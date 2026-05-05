@@ -17,8 +17,8 @@ This is the standard setup when using the shared `gpt-oss:20b` model on a hosted
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/vibhatsrivastava/Langchain_Development_Projects.git
-cd Langchain_Development_Projects
+git clone https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework.git
+cd Agentic_AI_Development_Framework
 ```
 
 ### 2. Configure Environment Variables

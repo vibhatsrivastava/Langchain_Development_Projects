@@ -15,7 +15,7 @@ This is a **Python monorepo** of Agentic AI projects built with [LangChain](http
 ## Repository Structure
 
 ```
-Langchain_Development_Projects/
+Agentic_AI_Development_Framework/
 ├── common/                    # Shared utilities — import from any project
 │   ├── llm_factory.py         # LLM builders: get_llm(), get_chat_llm(), get_embeddings()
 │   ├── utils.py               # get_logger(), require_env()
@@ -23,7 +23,7 @@ Langchain_Development_Projects/
 │       └── base_prompts.py    # QA_PROMPT, RAG_PROMPT, REACT_SYSTEM_PROMPT
 ├── projects/                  # Self-contained AI projects
 │   └── 01_hello_langchain/    # Minimal LCEL chain example
-├── Playground/                # Practice use case documents (.md) and scripts
+├── planner/                   # Practice use case documents (.md) and scripts
 ├── Quick-Reference/           # Concept guides for learning and interview prep
 ├── docs/                      # Setup and contribution documentation
 ├── .env.example               # Required environment variable template
@@ -202,9 +202,9 @@ projects/NN_project_name/
 
 Files in `Quick-Reference/` follow indexed naming (`01_`, `02_`, ...) and cover concepts with definitions, diagrams, examples, and interview Q&A. See existing files for format reference.
 
-### Playground
+### Planner
 
-Files in `Playground/` are practice use cases. Each `.md` file documents one scenario with sections: Use Case Description, Objective, Step-by-Step Thought Process, Pseudo Code, High Level Workflow Diagram, Low Level Workflow Diagram, Implementation Steps, Code Snippets, Test Cases, Expected Outcomes.
+Files in `planner/` are practice use cases. Each `.md` file documents one scenario with sections: Use Case Description, Objective, Step-by-Step Thought Process, Pseudo Code, High Level Workflow Diagram, Low Level Workflow Diagram, Implementation Steps, Code Snippets, Test Cases, Expected Outcomes.
 
 A corresponding `.py` file contains the runnable implementation.
 

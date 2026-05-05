@@ -45,10 +45,10 @@ dev = [
 ai-agent-builder = "ai_agent_builder.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/vibhatsrivastava/Langchain_Development_Projects"
-Repository = "https://github.com/vibhatsrivastava/Langchain_Development_Projects"
-Documentation = "https://github.com/vibhatsrivastava/Langchain_Development_Projects/tree/main/docs"
-Issues = "https://github.com/vibhatsrivastava/Langchain_Development_Projects/issues"
+Homepage = "https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework"
+Repository = "https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework"
+Documentation = "https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework/tree/main/docs"
+Issues = "https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ai_agent_builder"]

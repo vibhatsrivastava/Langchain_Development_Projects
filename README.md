@@ -1,9 +1,9 @@
-# LangChain Development Projects
+# Agentic AI Development Framework
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![LangChain](https://img.shields.io/badge/LangChain-latest-green?logo=chainlink)
 ![Ollama](https://img.shields.io/badge/Ollama-local%20%7C%20hosted-orange)
-![License](https://img.shields.io/github/license/vibhatsrivastava/Langchain_Development_Projects)
+![License](https://img.shields.io/github/license/vibhatsrivastava/Agentic_AI_Development_Framework)
 
 A curated **monorepo** of Agentic AI applications built with [LangChain](https://docs.langchain.com/) and [Ollama](https://ollama.com/). Each project is self-contained and demonstrates a specific use case, integration, or agentic pattern.
 
@@ -59,8 +59,8 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 # pip install uv
 
 # 2. Clone and navigate to repo
-git clone https://github.com/vibhatsrivastava/Langchain_Development_Projects.git
-cd Langchain_Development_Projects
+git clone https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework.git
+cd Agentic_AI_Development_Framework
 
 # 3. Set up environment
 cp .env.example .env
@@ -101,7 +101,7 @@ python src/main.py
 ### Repository Structure
 
 ```
-Langchain_Development_Projects/
+Agentic_AI_Development_Framework/
 ├── cli/                       # 🚀 SDK for project scaffolding
 │   ├── ai_agent_builder/         # CLI implementation
 │   └── templates/             # LCEL/LangGraph/Custom templates
@@ -117,7 +117,7 @@ Langchain_Development_Projects/
 │   └── prompts/               # Shared prompt templates (QA, RAG, ReAct)
 ├── docs/                      # 📚 Comprehensive documentation
 ├── Quick-Reference/           # 🎓 Learning resources (Agentic AI, ReAct, RAG, Ollama)
-├── Playground/                # 🧪 Practice scenarios and implementations
+├── planner/                   # 🧪 Practice scenarios and implementations
 ├── .env.example               # Environment variable template (copy to .env)
 ├── requirements-base.txt      # Shared base dependencies
 └── pytest.ini                 # Test configuration (90% coverage threshold)

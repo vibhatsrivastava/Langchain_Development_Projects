@@ -664,7 +664,7 @@ def mock_chat_llm(monkeypatch):
 ### Report Mode Output (sample)
 
 ```
-## Open Issues Report — vibhatsrivastava/Langchain_Development_Projects
+## Open Issues Report — vibhatsrivastava/Agentic_AI_Development_Framework
 **Total open issues: 4** | Generated: 2026-05-06
 
 | # | Title | Author | Assignee | Labels | Opened | Age (days) | Last Updated | URL |

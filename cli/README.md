@@ -222,5 +222,5 @@ MIT License - See [../LICENSE](../LICENSE) for details.
 ## Links
 
 - **Documentation**: [../docs/sdk.md](../docs/sdk.md)
-- **Repository**: https://github.com/vibhatsrivastava/ai_agent_builderelopment_Projects
-- **Issues**: https://github.com/vibhatsrivastava/ai_agent_builderelopment_Projects/issues
+- **Repository**: https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework
+- **Issues**: https://github.com/vibhatsrivastava/Agentic_AI_Development_Framework/issues
