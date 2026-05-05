@@ -54,6 +54,12 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 **Fastest way to get started** — scaffold a new project in <2 minutes:
 
 ```powershell
+# 0. Install uv (replaces pip + venv — run once)
+pip install uv
+# Or use the standalone installer (no Python required):
+# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# macOS/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # 1. Clone and navigate to repo
 git clone https://github.com/vibhatsrivastava/Langchain_Development_Projects.git
 cd Langchain_Development_Projects
@@ -63,20 +69,20 @@ cp .env.example .env
 # Edit .env with your OLLAMA_BASE_URL and OLLAMA_API_KEY
 
 # 3. Create and activate virtual environment
-python -m venv .venv
+uv venv .venv
 .venv\Scripts\Activate.ps1  # Windows PowerShell
 # source .venv/bin/activate  # macOS/Linux
 
 # 4. Install SDK and base dependencies
-pip install -r requirements-base.txt
-pip install -e cli/
+uv pip install -r requirements-base.txt
+uv tool install ./cli
 
 # 5. Scaffold a new project
-langchain-dev new-project 02_my_rag_app --arch lcel --integrations pgvector,langfuse
+ai-agent-builder new-project 02_my_rag_app --arch lcel --integrations pgvector,langfuse
 
 # 6. Run your project
 cd projects/02_my_rag_app
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python src/main.py
 ```
 
@@ -98,14 +104,18 @@ python src/main.py
 **For running existing projects** like `01_hello_langchain`:
 
 ```bash
-# 1-3. Clone, configure .env, create venv (same as Path 1)
+# 0. Install uv if not already installed
+pip install uv
+# Or: curl -LsSf https://astral.sh/uv/install.sh | sh  (macOS/Linux)
+
+# 1-3. Clone, configure .env, create and activate venv (same as Path 1)
 
 # 4. Install base dependencies only
-pip install -r requirements-base.txt
+uv pip install -r requirements-base.txt
 
 # 5. Navigate to project and install project-specific deps
 cd projects/01_hello_langchain
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # 6. Run the project
 python src/main.py
