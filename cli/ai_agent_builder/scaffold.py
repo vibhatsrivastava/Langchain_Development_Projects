@@ -222,9 +222,14 @@ class ProjectScaffolder:
         project_path: Path,
         integrations: List[str]
     ) -> None:
-        """Generate .env.example file with integration variables."""
-        env_vars = self.env_manager.get_env_vars(integrations)
-        self.env_manager.write_env_example(project_path, env_vars)
+        """Generate .env.example file with integration-specific variables only.
+
+        Skipped when no integrations are selected — all base variables live in
+        the repo-root .env and are found automatically via load_dotenv().
+        """
+        if not integrations:
+            return
+        self.env_manager.write_env_example(project_path, integrations)
     
     def _update_root_readme(
         self,
@@ -239,7 +244,7 @@ class ProjectScaffolder:
             return  # Skip if README doesn't exist
         
         # Read current README
-        readme_content = readme_path.read_text()
+        readme_content = readme_path.read_text(encoding="utf-8")
         
         # Build project description
         project_number = get_project_number(project_name)
@@ -268,7 +273,7 @@ class ProjectScaffolder:
             
             if insertion_index:
                 lines.insert(insertion_index, project_entry)
-                readme_path.write_text("\n".join(lines))
+                readme_path.write_text("\n".join(lines), encoding="utf-8")
     
     def _run_post_generate_hooks(
         self,

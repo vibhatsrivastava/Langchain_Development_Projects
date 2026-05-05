@@ -1,14 +1,6 @@
-{# README.md template for generated projects #}
-# {{ project_name }} — {{ project_description }}
+# 03_weather_reporting_agent — Weather Reporting Agent
 
-{{ architecture_name }} implementation using LangChain{% if has_integrations %} with the following integrations:{% endif %}
-
-{% if has_integrations %}
-**Integrations:**
-{% for integration in integrations %}
-- {{ integration }}
-{% endfor %}
-{% endif %}
+LangGraph Agent implementation using LangChain
 
 ---
 
@@ -16,8 +8,8 @@
 
 This project was scaffolded using `ai-agent-builder` CLI tool.
 
-**Architecture:** {{ architecture }}
-**Project Number:** {{ project_number }}
+**Architecture:** langgraph
+**Project Number:** 03
 
 ---
 
@@ -25,20 +17,15 @@ This project was scaffolded using `ai-agent-builder` CLI tool.
 
 ### 1. Environment Variables
 
-All variables are loaded from the **repo-root `.env`** automatically — do **not** create a project-level `.env` file.
+Copy `.env.example` to `.env` and fill in your values:
 
-Ensure these are set in `<repo-root>/.env`:
+```powershell
+cp .env.example .env
+```
+
+Required variables:
 - `OLLAMA_BASE_URL` — Ollama server URL
 - `OLLAMA_MODEL` — Default LLM model
-{% if has_vector_store %}
-- Vector store connection variables (see `.env.example` for the full list)
-{% endif %}
-{% if has_cache %}
-- Redis connection variables (see `.env.example` for the full list)
-{% endif %}
-{% if has_observability %}
-- Observability API keys (see `.env.example` for the full list)
-{% endif %}
 
 ### 2. Install Dependencies
 
@@ -50,16 +37,6 @@ Ensure these are set in `<repo-root>/.env`:
 pip install -r requirements.txt
 ```
 
-{% if has_integrations %}
-### 3. Integration Setup
-
-{% for integration in integrations %}
-#### {{ integration }}
-
-See integration-specific setup instructions in `.env.example` and below.
-
-{% endfor %}
-{% endif %}
 
 ---
 
@@ -86,16 +63,14 @@ pytest tests/test_main.py -v
 ## Project Structure
 
 ```
-{{ project_name }}/
+03_weather_reporting_agent/
 ├── src/
 │   └── main.py           # Main entry point
 ├── tests/
 │   ├── conftest.py       # pytest fixtures
 │   └── test_main.py      # Unit tests
 ├── requirements.txt      # Project-specific dependencies
-{% if has_integrations %}
-├── .env.example          # Integration-specific variable reference (add to root .env)
-{% endif %}
+├── .env.example          # Environment variable template
 └── README.md             # This file
 ```
 

@@ -58,51 +58,42 @@ class EnvManager:
     def write_env_example(
         self,
         project_path: Path,
-        env_vars: Dict[str, str],
-        header_comment: Optional[str] = None
+        integrations: List[str],
     ) -> Path:
         """
-        Write .env.example file to project directory.
-        
+        Write .env.example file containing only integration-specific variables.
+
+        Base Ollama/Vault variables are intentionally excluded — they live in
+        the repo-root .env and are found automatically via load_dotenv().
+        Add the variables listed here to the repo-root .env, not to a
+        project-level .env file.
+
         Args:
             project_path: Path to project directory
-            env_vars: Dictionary of environment variables
-            header_comment: Optional header comment for the file
-        
+            integrations: List of integration names whose variables to include
+
         Returns:
             Path to created .env.example file
         """
+        from .integrations import get_integration
+
+        # Collect only integration-specific variables
+        integration_vars: Dict[str, str] = {}
+        for integration_name in integrations:
+            integration = get_integration(integration_name)
+            if integration:
+                integration_vars.update(integration.get_env_vars())
+
         env_file = project_path / ".env.example"
-        
+
         with open(env_file, "w", encoding="utf-8") as f:
-            # Write header comment
-            if header_comment:
-                f.write(f"# {header_comment}\n")
-            else:
-                f.write("# Environment variables for this project\n")
-            f.write("# Copy this file to .env and fill in your actual values\n\n")
-            
-            # Group variables by category
-            default_keys = set(DEFAULT_ENV_VARS.keys())
-            integration_keys = set(env_vars.keys()) - default_keys
-            
-            # Write default variables
-            if default_keys:
-                f.write("# Base Ollama configuration\n")
-                for key in sorted(default_keys):
-                    if key in env_vars:
-                        value = env_vars[key]
-                        f.write(f"{key}={value}\n")
-                f.write("\n")
-            
-            # Write integration-specific variables
-            if integration_keys:
-                f.write("# Integration-specific variables\n")
-                for key in sorted(integration_keys):
-                    value = env_vars[key]
-                    f.write(f"{key}={value}\n")
-                f.write("\n")
-        
+            f.write("# Integration-specific environment variables\n")
+            f.write("# Add these to the repo-root .env file (do NOT create a project-level .env)\n\n")
+
+            for key in sorted(integration_vars.keys()):
+                f.write(f"{key}={integration_vars[key]}\n")
+            f.write("\n")
+
         return env_file
     
     def validate_env_file(
