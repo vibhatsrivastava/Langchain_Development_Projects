@@ -34,14 +34,33 @@ Langchain_Development_Projects/
 
 ## Environment Setup
 
-**All projects share a single `.venv` at the repo root.**
+**Each project has its own isolated `.venv`, created automatically by the CLI when scaffolding.**
 
 ```powershell
-# Windows — activate the shared virtual environment
-.venv\Scripts\Activate.ps1
+# Install uv once (replaces pip + pipx)
+pip install uv
+# Or the standalone installer (no Python required):
+# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# Install base dependencies (once, after cloning)
-pip install -r requirements-base.txt
+# Install the AI Agent Builder CLI globally (isolated, no venv needed)
+uv tool install ./cli
+
+# Scaffold a new project — venv is created automatically
+ai-agent-builder new-project 03_my_agent
+
+# Activate the project venv and start working
+cd projects/03_my_agent
+.venv\Scripts\Activate.ps1   # Windows
+# source .venv/bin/activate  # Mac/Linux
+```
+
+**For the root-level test suite only** (running `pytest` from repo root across all projects):
+
+```powershell
+# Create a root dev venv with test tooling + common
+uv venv .venv
+uv pip install -e ./common
+uv pip install -r requirements-base.txt
 ```
 
 **Required `.env` variables** (copy from `.env.example`):
@@ -79,11 +98,12 @@ When `VAULT_ENABLED=true`, `OLLAMA_API_KEY` is retrieved from Vault with automat
 
 ## The `common/` Package — Always Use It
 
-Every project **must** use the shared `common/` package instead of directly instantiating LangChain classes. Add the sys.path insert pattern at the top of every project script:
+Every project **must** use the shared `common/` package instead of directly instantiating LangChain classes. The `common/` package is installed as an editable package (`ai-agent-common`) into each project's `.venv` by the CLI scaffold. No `sys.path` manipulation is needed:
 
 ```python
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+# Direct import — works because ai-agent-common is installed in the project venv
+from common.llm_factory import get_llm, get_chat_llm, get_embeddings
+from common.utils import get_logger
 ```
 
 ### LLM Factory — Which Builder to Use
@@ -165,9 +185,10 @@ answer = result["messages"][-1].content
 
 ```
 projects/NN_project_name/
+├── .venv/             # Per-project isolated venv (created by CLI, gitignored)
 ├── src/
 │   └── main.py            # Entry point; uses common/ imports
-├── requirements.txt       # Project-specific deps only (base deps in root)
+├── requirements.txt       # Project-specific deps only
 └── README.md              # Description, usage, sample output
 ```
 
@@ -282,11 +303,9 @@ def test_chain_with_mocked_llm(mock_llm):
 ## Running Projects
 
 ```powershell
-# From repo root, with .venv active
-python projects/01_hello_langchain/src/main.py
-
-# Or from the project directory
+# Activate the project venv, then run
 cd projects/01_hello_langchain
+.venv\Scripts\Activate.ps1
 python src/main.py
 ```
 
@@ -307,10 +326,11 @@ python src/main.py
 
 ## Common Pitfalls
 
-- **Import errors from `common/`** — Always add the `sys.path.insert` at the top of project scripts before importing from `common/`
+- **`common/` import errors** — The project venv must have `ai-agent-common` installed. Run `uv pip install -e ./common` from the repo root targeting the project venv, or re-scaffold using `ai-agent-builder new-project`
+- **Do NOT add `sys.path.insert`** — `common/` is a proper installable package; path hacks are no longer needed or used
 - **`.env` not found** — `llm_factory.py` calls `load_dotenv()` which searches upward; ensure `.env` exists at repo root
 - **Project-level `.env` files** — NEVER create `.env` or `.env.example` files inside project directories; all environment configuration belongs in the root `.env` file. `load_dotenv()` searches upward from `common/` and will find the root `.env` automatically.
 - **Wrong LLM class** — Use `get_chat_llm()` (not `get_llm()`) for agents and LangGraph nodes; `OllamaLLM` does not support tool calling
 - **Model not available** — Run `ollama list` to see downloaded models; run `ollama pull <model>` if missing
 - **`OLLAMA_API_KEY` left blank for remote** — Remote Ollama servers require the Bearer token; check `.env`
-- **`venv/` vs `.venv/`** — The repo uses `.venv/` at the root; some projects have their own `venv/` but the shared `.venv` is preferred
+- **`venv/` vs `.venv/`** — Each project uses `.venv/` inside its own directory; the root `.venv/` is only for repo-wide test runs

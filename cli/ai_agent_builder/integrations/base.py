@@ -104,7 +104,7 @@ class IntegrationModule(ABC):
         """
         Return list of (template_path, output_path) tuples for file generation.
         
-        Template paths are relative to cli/langchain_dev/templates/integrations/
+        Template paths are relative to cli/ai_agent_builder/templates/integrations/
         Output paths are relative to the project root.
         
         Returns:

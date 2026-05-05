@@ -1,5 +1,5 @@
 """
-cli.py — Command-line interface for langchain-dev-tools.
+cli.py — Command-line interface for AI Agent Builder.
 
 Provides commands for project scaffolding, validation, and integration management.
 """
@@ -24,12 +24,12 @@ load_dotenv()
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="langchain-dev")
+@click.version_option(version=__version__, prog_name="ai-agent-builder")
 def main():
     """
-    langchain-dev — LangChain project scaffolding and development tools.
+    ai-agent-builder — AI Agent project scaffolding and development tools.
     
-    Accelerate LangChain development with automated project generation,
+    Accelerate AI Agent development with automated project generation,
     composable integration modules, and built-in best practices.
     """
     pass
@@ -74,17 +74,17 @@ def new_project(
     
         \b
         # Interactive mode (recommended for first-time users)
-        langchain-dev new-project
+        ai-agent-builder new-project
         
         \b
         # Non-interactive mode
-        langchain-dev new-project 05_sentiment_analysis \\
+        ai-agent-builder new-project 05_sentiment_analysis \\
             --architecture lcel \\
             --integrations langfuse
         
         \b
         # RAG project with pgvector + Langfuse
-        langchain-dev new-project 06_rag_system \\
+        ai-agent-builder new-project 06_rag_system \\
             --arch lcel \\
             -i pgvector,langfuse
     """
@@ -101,7 +101,7 @@ def new_project(
     
     # Interactive mode
     if not non_interactive:
-        click.echo(click.style("\n🚀 LangChain Project Generator", fg="cyan", bold=True))
+        click.echo(click.style("\n🚀 AI Agent Builder — Project Generator", fg="cyan", bold=True))
         click.echo()
         
         # Get project name
@@ -191,8 +191,10 @@ def new_project(
         click.echo()
         click.echo("Next steps:")
         click.echo(f"  1. cd {project_path.relative_to(repo_root)}")
-        click.echo("  2. Copy .env.example to .env and configure")
-        click.echo("  3. Install dependencies: pip install -r requirements.txt")
+        click.echo("  2. Activate the project venv:")
+        click.echo("       Windows: .venv\\Scripts\\activate")
+        click.echo("       Mac/Linux: source .venv/bin/activate")
+        click.echo("  3. Copy .env.example to .env and configure")
         click.echo("  4. Run: python src/main.py")
         click.echo()
         
@@ -222,11 +224,11 @@ def list_integrations_cmd(category: Optional[str]):
     
         \b
         # List all integrations
-        langchain-dev integrations list
+        ai-agent-builder integrations list
         
         \b
         # List only vector stores
-        langchain-dev integrations list --category vector_store
+        ai-agent-builder integrations list --category vector_store
     """
     integrations_list = list_integrations(category=category)
     
@@ -261,7 +263,7 @@ def integration_info(integration_name: str):
     
         \b
         # Get pgvector integration details
-        langchain-dev integrations info pgvector
+        ai-agent-builder integrations info pgvector
     """
     integration = get_integration(integration_name)
     
@@ -311,11 +313,11 @@ def validate(project_path: Optional[str]):
     
         \b
         # Validate current directory
-        langchain-dev validate
+        ai-agent-builder validate
         
         \b
         # Validate specific project
-        langchain-dev validate projects/05_my_project
+        ai-agent-builder validate projects/05_my_project
     """
     if not project_path:
         project_path = Path.cwd()
@@ -373,15 +375,15 @@ def test(project_path: Optional[str], coverage: bool, verbose: bool):
     
         \b
         # Run tests in current directory
-        langchain-dev test
+        ai-agent-builder test
         
         \b
         # Run with coverage
-        langchain-dev test --coverage
+        ai-agent-builder test --coverage
         
         \b
         # Run specific project tests
-        langchain-dev test projects/05_my_project --coverage -v
+        ai-agent-builder test projects/05_my_project --coverage -v
     """
     if not project_path:
         project_path = Path.cwd()

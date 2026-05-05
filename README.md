@@ -26,7 +26,7 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 
 ### ⚡ Key Features
 
-- **🚀 SDK Scaffolding** — Generate production-ready projects in <2 minutes with `langchain-dev` CLI
+- **🚀 SDK Scaffolding** — Generate production-ready projects in <2 minutes with `ai-agent-builder` CLI
 - **🏭 Shared Architecture** — Reusable LLM factory, prompts, utilities across all projects
 - **🔌 Composable Integrations** — Mix-and-match vector stores (pgvector, Chroma, FAISS), caching (Redis), observability (Langfuse)
 - **🧪 Built-in Testing** — Pre-configured pytest fixtures, mocked LLMs, 90% coverage templates
@@ -41,7 +41,7 @@ A curated **monorepo** of Agentic AI applications built with [LangChain](https:/
 |---|---------|------|-------------|
 | 01 | [Hello LangChain](projects/01_hello_langchain/) | LCEL | Minimal working example — chain setup, LLM call, prompt template |
 
-> **More projects coming soon!** Use the SDK to create your own: `langchain-dev new-project 02_my_agent --arch langgraph`
+> **More projects coming soon!** Use the SDK to create your own: `ai-agent-builder new-project 02_my_agent --arch langgraph`
 
 ---
 
@@ -122,7 +122,7 @@ python src/main.py
 ```
 Langchain_Development_Projects/
 ├── cli/                       # 🚀 SDK for project scaffolding
-│   ├── langchain_dev/         # CLI implementation
+│   ├── ai_agent_builder/         # CLI implementation
 │   └── templates/             # LCEL/LangGraph/Custom templates
 ├── projects/                  # 📦 Individual AI projects (self-contained)
 │   └── 01_hello_langchain/    # Example: minimal LCEL chain
@@ -263,7 +263,7 @@ projects/NN_project_name/
 
 We welcome contributions! To add a new project:
 
-1. **Use the SDK** (recommended): `langchain-dev new-project NN_your_project --arch [lcel|langgraph|custom]`
+1. **Use the SDK** (recommended): `ai-agent-builder new-project NN_your_project --arch [lcel|langgraph|custom]`
 2. **Follow naming convention**: `NN_descriptive_name` (e.g., `02_pdf_qa_agent`)
 3. **Include tests**: Achieve ≥90% coverage (`pytest --cov --cov-fail-under=90`)
 4. **Update this README**: Add your project to the [Available Projects](#available-projects) table

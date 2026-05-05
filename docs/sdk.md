@@ -1,4 +1,4 @@
-# LangChain Development SDK (`langchain-dev-tools`)
+# AI Agent Builder SDK (`ai-agent-builder`)
 
 > **Accelerate LangChain project development with automated scaffolding, composable integrations, and production-ready defaults.**
 
@@ -21,7 +21,7 @@
 
 ## Introduction
 
-The **LangChain Development SDK** (`langchain-dev-tools`) is a command-line tool that automates LangChain project scaffolding, eliminating manual boilerplate and reducing project setup time from **15 minutes to under 2 minutes**.
+The **AI Agent Builder SDK** (`ai-agent-builder`) is a command-line tool that automates LangChain project scaffolding, eliminating manual boilerplate and reducing project setup time from **15 minutes to under 2 minutes**.
 
 ### Why Use It?
 
@@ -36,7 +36,7 @@ The **LangChain Development SDK** (`langchain-dev-tools`) is a command-line tool
 
 **With SDK:**
 ```powershell
-langchain-dev new-project 05_sentiment_analysis --arch lcel --integrations langfuse
+ai-agent-builder new-project 05_sentiment_analysis --arch lcel --integrations langfuse
 # ✅ Done in <2 minutes
 ```
 
@@ -80,10 +80,10 @@ Project-specific modules generated on demand:
 | **Observability** | Langfuse | Open-source LLM tracing, cost tracking, evals |
 
 ### 🛠️ **Developer Tools**
-- `langchain-dev validate` — Check project structure, .env vars
-- `langchain-dev test` — Run pytest with coverage reporting
-- `langchain-dev integrations list` — Discover available integrations
-- `langchain-dev integrations info <name>` — Integration details, prerequisites
+- `ai-agent-builder validate` — Check project structure, .env vars
+- `ai-agent-builder test` — Run pytest with coverage reporting
+- `ai-agent-builder integrations list` — Discover available integrations
+- `ai-agent-builder integrations info <name>` — Integration details, prerequisites
 
 ---
 
@@ -101,15 +101,15 @@ Project-specific modules generated on demand:
 pip install -e cli/
 ```
 
-This installs the `langchain-dev` command globally in your `.venv`.
+This installs the `ai-agent-builder` command globally in your `.venv`.
 
 ### Verify Installation
 
 ```powershell
-langchain-dev --version
-# Output: langchain-dev, version 0.1.0
+ai-agent-builder --version
+# Output: ai-agent-builder, version 0.1.0
 
-langchain-dev --help
+ai-agent-builder --help
 # Shows available commands
 ```
 
@@ -120,7 +120,7 @@ langchain-dev --help
 ###  Example 1: Basic LCEL Chain
 
 ```powershell
-langchain-dev new-project 05_hello_lcel --arch lcel
+ai-agent-builder new-project 05_hello_lcel --arch lcel
 
 cd projects/05_hello_lcel
 cp .env.example .env
@@ -145,7 +145,7 @@ python src/main.py
 ### Example 2: RAG with pgvector + Langfuse
 
 ```powershell
-langchain-dev new-project 06_rag_system \\
+ai-agent-builder new-project 06_rag_system \\
     --arch lcel \\
     --integrations pgvector,langfuse
 
@@ -181,7 +181,7 @@ python src/main.py
 ### Example 3: Interactive Mode
 
 ```powershell
-langchain-dev new-project
+ai-agent-builder new-project
 
 # 🚀 LangChain Project Generator
 # 
@@ -312,13 +312,13 @@ from common.integrations.observability import init_tracing
 
 ## Command Reference
 
-### `langchain-dev new-project`
+### `ai-agent-builder new-project`
 
 Create a new LangChain project from templates.
 
 **Usage:**
 ```powershell
-langchain-dev new-project [PROJECT_NAME] [OPTIONS]
+ai-agent-builder new-project [PROJECT_NAME] [OPTIONS]
 ```
 
 **Options:**
@@ -332,18 +332,18 @@ langchain-dev new-project [PROJECT_NAME] [OPTIONS]
 **Examples:**
 ```powershell
 # Interactive mode (recommended)
-langchain-dev new-project
+ai-agent-builder new-project
 
 # Non-interactive
-langchain-dev new-project 05_chatbot --arch langgraph -i redis,langfuse
+ai-agent-builder new-project 05_chatbot --arch langgraph -i redis,langfuse
 
 # Minimal custom project
-langchain-dev new-project 06_custom --arch custom --integrations none
+ai-agent-builder new-project 06_custom --arch custom --integrations none
 ```
 
 ---
 
-### `langchain-dev integrations`
+### `ai-agent-builder integrations`
 
 Discover and manage integration modules.
 
@@ -352,7 +352,7 @@ List all available integrations.
 
 **Usage:**
 ```powershell
-langchain-dev integrations list [OPTIONS]
+ai-agent-builder integrations list [OPTIONS]
 ```
 
 **Options:**
@@ -363,10 +363,10 @@ langchain-dev integrations list [OPTIONS]
 **Examples:**
 ```powershell
 # List all
-langchain-dev integrations list
+ai-agent-builder integrations list
 
 # List only vector stores
-langchain-dev integrations list --category vector_store
+ai-agent-builder integrations list --category vector_store
 ```
 
 #### `integrations info`
@@ -374,13 +374,13 @@ Show detailed integration information.
 
 **Usage:**
 ```powershell
-langchain-dev integrations info <INTEGRATION_NAME>
+ai-agent-builder integrations info <INTEGRATION_NAME>
 ```
 
 **Examples:**
 ```powershell
 # pgvector details
-langchain-dev integrations info pgvector
+ai-agent-builder integrations info pgvector
 
 # Output:
 # 📦 pgvector
@@ -406,13 +406,13 @@ langchain-dev integrations info pgvector
 
 ---
 
-### `langchain-dev validate`
+### `ai-agent-builder validate`
 
 Validate project structure and configuration.
 
 **Usage:**
 ```powershell
-langchain-dev validate [PROJECT_PATH]
+ai-agent-builder validate [PROJECT_PATH]
 ```
 
 **Checks:**
@@ -423,21 +423,21 @@ langchain-dev validate [PROJECT_PATH]
 **Examples:**
 ```powershell
 # Validate current directory
-langchain-dev validate
+ai-agent-builder validate
 
 # Validate specific project
-langchain-dev validate projects/05_my_project
+ai-agent-builder validate projects/05_my_project
 ```
 
 ---
 
-### `langchain-dev test`
+### `ai-agent-builder test`
 
 Run project tests with pytest.
 
 **Usage:**
 ```powershell
-langchain-dev test [PROJECT_PATH] [OPTIONS]
+ai-agent-builder test [PROJECT_PATH] [OPTIONS]
 ```
 
 **Options:**
@@ -449,13 +449,13 @@ langchain-dev test [PROJECT_PATH] [OPTIONS]
 **Examples:**
 ```powershell
 # Run tests in current directory
-langchain-dev test
+ai-agent-builder test
 
 # Run with coverage
-langchain-dev test --coverage
+ai-agent-builder test --coverage
 
 # Run specific project with verbose output
-langchain-dev test projects/05_chatbot --coverage -v
+ai-agent-builder test projects/05_chatbot --coverage -v
 ```
 
 ---
@@ -482,7 +482,7 @@ langchain-dev test projects/05_chatbot --coverage -v
    LANGFUSE_HOST=https://cloud.langfuse.com
    ```
 
-3. **Copy integration code**: From `cli/langchain_dev/templates/integrations/langfuse/`
+3. **Copy integration code**: From `cli/ai_agent_builder/templates/integrations/langfuse/`
    ```powershell
    mkdir src/monitoring
    # Copy tracing.py template manually
@@ -498,7 +498,7 @@ langchain-dev test projects/05_chatbot --coverage -v
 #### Option 2: Regenerate Project (Future Feature)
 ```powershell
 # Planned for v0.2.0
-langchain-dev add-integration langfuse
+ai-agent-builder add-integration langfuse
 ```
 
 ---
@@ -509,7 +509,7 @@ langchain-dev add-integration langfuse
 
 **Plugin Structure (future):**
 ```python
-# cli/langchain_dev/integrations/custom/my_integration.py
+# cli/ai_agent_builder/integrations/custom/my_integration.py
 from ..base import IntegrationModule
 
 class MyIntegration(IntegrationModule):
@@ -597,7 +597,7 @@ class MyIntegration(IntegrationModule):
 - 1-year LTS support for enterprise users
 
 **Distribution:**
-- PyPI package: `pip install langchain-dev-tools`
+- PyPI package: `uv tool install ./cli`
 - Standalone binaries (Windows, macOS, Linux)
 
 **External Adoption:**
@@ -621,7 +621,7 @@ class MyIntegration(IntegrationModule):
 **A**: For new projects, yes (recommended). Existing projects can stay manual or be migrated using `migrate` command (v0.2.0+).
 
 ### **Q: How does testing work with generated projects?**
-**A**: Every project includes `tests/conftest.py` with mocked LLM/integration fixtures. Run `langchain-dev test --coverage` to enforce 90% coverage.
+**A**: Every project includes `tests/conftest.py` with mocked LLM/integration fixtures. Run `ai-agent-builder test --coverage` to enforce 90% coverage.
 
 ### **Q: What if I need an integration not in v0.1.0?**
 **A**: Manually add it using the [Integration Guide](#integration-guide). Submit a feature request for inclusion in v0.2.0+.
@@ -635,7 +635,7 @@ class MyIntegration(IntegrationModule):
 
 ### **Bug Reports**
 Submit issues to the repository with:
-- SDK version (`langchain-dev --version`)
+- SDK version (`ai-agent-builder --version`)
 - Full command executed
 - Error traceback
 

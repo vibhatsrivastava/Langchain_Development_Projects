@@ -1,5 +1,5 @@
 """
-config.py — Configuration and constants for langchain-dev CLI.
+config.py — Configuration and constants for AI Agent Builder CLI.
 
 Defines base architectures, project patterns, and default configurations.
 """

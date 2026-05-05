@@ -6,6 +6,8 @@ Creates project directory structure, renders templates, and generates files.
 
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -120,7 +122,10 @@ class ProjectScaffolder:
         
         # Run post-generation hooks
         self._run_post_generate_hooks(project_path, integrations)
-        
+
+        # Set up isolated virtual environment with uv
+        self._setup_project_environment(project_path)
+
         return project_path
     
     def _validate_project_name(self, project_name: str) -> None:
@@ -275,3 +280,91 @@ class ProjectScaffolder:
             integration = get_integration(integration_name)
             if integration:
                 integration.post_generate_hook(project_path)
+
+    def _setup_project_environment(self, project_path: Path) -> None:
+        """
+        Create an isolated uv virtual environment for the project and install
+        all dependencies:
+          1. common/ package (editable) — brings runtime deps (langchain, etc.)
+          2. requirements-base.txt — test/dev tooling (pytest, etc.)
+          3. project requirements.txt — project-specific extras
+
+        Requires uv to be installed globally. Prints a clear error if not found.
+        """
+        venv_path = project_path / ".venv"
+        common_path = self.repo_root / "common"
+        requirements_base = self.repo_root / "requirements-base.txt"
+        project_requirements = project_path / "requirements.txt"
+
+        try:
+            # Verify uv is available before starting
+            subprocess.run(
+                ["uv", "--version"],
+                check=True,
+                capture_output=True,
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print(
+                "\n  ⚠️  uv is not installed. Skipping virtual environment setup."
+                "\n      Install uv: https://docs.astral.sh/uv/getting-started/installation/"
+                "\n      Then run manually inside the project directory:"
+                "\n        uv venv .venv"
+                f"\n        uv pip install -e {common_path}"
+                f"\n        uv pip install -r {requirements_base}"
+                "\n        uv pip install -r requirements.txt",
+                file=sys.stderr,
+            )
+            return
+
+        print("\n  🔧 Setting up virtual environment with uv...")
+
+        try:
+            # 1. Create venv
+            subprocess.run(
+                ["uv", "venv", str(venv_path)],
+                check=True,
+                capture_output=True,
+            )
+            print(f"     ✓ Created .venv at {venv_path.relative_to(self.repo_root)}")
+
+            # 2. Install common/ as editable (pulls all runtime deps)
+            subprocess.run(
+                ["uv", "pip", "install", "--python", str(venv_path), "-e", str(common_path)],
+                check=True,
+                capture_output=True,
+            )
+            print("     ✓ Installed ai-agent-common (runtime deps)")
+
+            # 3. Install test/dev tooling
+            if requirements_base.exists():
+                subprocess.run(
+                    [
+                        "uv", "pip", "install",
+                        "--python", str(venv_path),
+                        "-r", str(requirements_base),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                print("     ✓ Installed test/dev tooling (requirements-base.txt)")
+
+            # 4. Install project-specific deps
+            if project_requirements.exists():
+                subprocess.run(
+                    [
+                        "uv", "pip", "install",
+                        "--python", str(venv_path),
+                        "-r", str(project_requirements),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                print("     ✓ Installed project-specific deps (requirements.txt)")
+
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr.decode(errors="replace") if exc.stderr else ""
+            print(
+                f"\n  ❌  Environment setup failed: {exc.cmd}"
+                f"\n{stderr}",
+                file=sys.stderr,
+            )

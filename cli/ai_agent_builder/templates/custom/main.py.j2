@@ -5,12 +5,6 @@ main.py — {{ project_description }}
 Custom implementation with minimal scaffolding.
 """
 
-import sys
-import os
-
-# Add repo root to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-
 from common.llm_factory import get_llm, get_chat_llm
 from common.utils import get_logger
 {% if has_observability %}

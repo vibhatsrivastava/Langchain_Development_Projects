@@ -5,12 +5,6 @@ main.py — {{ project_description }}
 {{ architecture_name }} implementation using LangChain Expression Language.
 """
 
-import sys
-import os
-
-# Add repo root to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from common.llm_factory import get_llm

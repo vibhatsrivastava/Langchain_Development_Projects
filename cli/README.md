@@ -1,4 +1,4 @@
-# LangChain Development Tools (`langchain-dev`)
+# AI Agent Builder (`ai-agent-builder`)
 
 A CLI tool for scaffolding production-ready LangChain projects with composable integrations.
 
@@ -29,7 +29,7 @@ pip install -e cli/
 Once published to PyPI:
 
 ```powershell
-pip install langchain-dev-tools
+uv tool install ./cli
 ```
 
 ## Quick Start
@@ -37,13 +37,13 @@ pip install langchain-dev-tools
 ### 1. Create a Basic LCEL Chain Project
 
 ```powershell
-langchain-dev new-project 05_basic_chain --base lcel
+ai-agent-builder new-project 05_basic_chain --base lcel
 ```
 
 ### 2. Create a RAG Project with pgvector and Langfuse
 
 ```powershell
-langchain-dev new-project 06_rag_example \
+ai-agent-builder new-project 06_rag_example \
   --base lcel \
   --integrations pgvector,langfuse
 ```
@@ -51,19 +51,19 @@ langchain-dev new-project 06_rag_example \
 ### 3. Validate Project Structure
 
 ```powershell
-langchain-dev validate projects/06_rag_example
+ai-agent-builder validate projects/06_rag_example
 ```
 
 ### 4. Run Tests
 
 ```powershell
-langchain-dev test projects/06_rag_example
+ai-agent-builder test projects/06_rag_example
 ```
 
 ### 5. List Available Integrations
 
 ```powershell
-langchain-dev integrations list
+ai-agent-builder integrations list
 ```
 
 ## Available Integrations (v0.1.0)
@@ -88,7 +88,7 @@ langchain-dev integrations list
 ### Interactive Project Creation
 
 ```powershell
-langchain-dev new-project 07_my_project
+ai-agent-builder new-project 07_my_project
 
 # Prompts:
 # Project number: 07
@@ -105,7 +105,7 @@ langchain-dev new-project 07_my_project
 ### Get Integration Details
 
 ```powershell
-langchain-dev integrations info pgvector
+ai-agent-builder integrations info pgvector
 
 # Output:
 # pgvector - PostgreSQL with pgvector extension
@@ -133,7 +133,7 @@ langchain-dev integrations info pgvector
 
 ```powershell
 cd cli/
-pytest --cov=langchain_dev --cov-report=term-missing
+pytest --cov=ai_agent_builder --cov-report=term-missing
 ```
 
 ### Building the Package
@@ -159,7 +159,7 @@ python -m build
 
 ## Commands Reference
 
-### `langchain-dev new-project`
+### `ai-agent-builder new-project`
 
 Create a new LangChain project with scaffolding.
 
@@ -170,34 +170,34 @@ Create a new LangChain project with scaffolding.
 
 **Example**:
 ```powershell
-langchain-dev new-project 08_production_rag \
+ai-agent-builder new-project 08_production_rag \
   --base lcel \
   --integrations pgvector,redis,langfuse,pdf-loader
 ```
 
-### `langchain-dev validate`
+### `ai-agent-builder validate`
 
 Validate project structure, environment variables, and test coverage.
 
 **Example**:
 ```powershell
-langchain-dev validate projects/08_production_rag
+ai-agent-builder validate projects/08_production_rag
 ```
 
-### `langchain-dev test`
+### `ai-agent-builder test`
 
 Run pytest with coverage reporting.
 
 **Example**:
 ```powershell
-langchain-dev test projects/08_production_rag
+ai-agent-builder test projects/08_production_rag
 ```
 
-### `langchain-dev integrations list`
+### `ai-agent-builder integrations list`
 
 List all available integrations with descriptions.
 
-### `langchain-dev integrations info <name>`
+### `ai-agent-builder integrations info <name>`
 
 Show detailed information about an integration.
 
@@ -212,8 +212,8 @@ Show detailed information about an integration.
 
 ### v0.2.0 (Q2 2026)
 - Add integrations: Pinecone, Weaviate, Qdrant, LangSmith, Supabase, MongoDB
-- `langchain-dev add-integration` command (add to existing project)
-- `langchain-dev migrate` command (update projects to new SDK version)
+- `ai-agent-builder add-integration` command (add to existing project)
+- `ai-agent-builder migrate` command (update projects to new SDK version)
 - Custom template directory support
 
 ### v0.3.0+ (Q3 2026)
@@ -237,5 +237,5 @@ MIT License - See [../LICENSE](../LICENSE) for details.
 ## Links
 
 - **Documentation**: [../docs/sdk.md](../docs/sdk.md)
-- **Repository**: https://github.com/vibhatsrivastava/Langchain_Development_Projects
-- **Issues**: https://github.com/vibhatsrivastava/Langchain_Development_Projects/issues
+- **Repository**: https://github.com/vibhatsrivastava/ai_agent_builderelopment_Projects
+- **Issues**: https://github.com/vibhatsrivastava/ai_agent_builderelopment_Projects/issues

@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "langchain-dev-tools"
+name = "ai-agent-builder"
 version = "0.1.0"
-description = "CLI tool for scaffolding production-ready LangChain projects with composable integrations"
+description = "CLI tool for scaffolding production-ready AI Agent projects with composable integrations"
 readme = "README.md"
 authors = [
     {name = "Langchain Development Projects Team"}
@@ -42,7 +42,7 @@ dev = [
 ]
 
 [project.scripts]
-langchain-dev = "langchain_dev.cli:main"
+ai-agent-builder = "ai_agent_builder.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/vibhatsrivastava/Langchain_Development_Projects"
@@ -50,11 +50,8 @@ Repository = "https://github.com/vibhatsrivastava/Langchain_Development_Projects
 Documentation = "https://github.com/vibhatsrivastava/Langchain_Development_Projects/tree/main/docs"
 Issues = "https://github.com/vibhatsrivastava/Langchain_Development_Projects/issues"
 
-[tool.setuptools]
-packages = ["langchain_dev"]
-
-[tool.setuptools.package-data]
-langchain_dev = ["templates/**/*"]
+[tool.hatch.build.targets.wheel]
+packages = ["ai_agent_builder"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -69,7 +66,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["langchain_dev"]
+source = ["ai_agent_builder"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
