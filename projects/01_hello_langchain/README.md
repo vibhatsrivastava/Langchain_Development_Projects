@@ -23,50 +23,38 @@ cp .env.example .env
 # Fill in OLLAMA_BASE_URL and OLLAMA_API_KEY
 ```
 
-**2. Create a virtual environment (from the repo root):**
+**2. Set up the virtual environment:**
 
-This isolates the project's dependencies from your global Python installation and other projects.
+If you scaffolded this project with `ai-agent-builder`, the `.venv` was created automatically with all dependencies installed. If not, create it manually:
 
-```bash
-python -m venv venv
+```powershell
+# From the repo root
+uv venv projects/01_hello_langchain/.venv
+uv pip install -e ./common --python projects/01_hello_langchain/.venv
+uv pip install -r requirements-base.txt --python projects/01_hello_langchain/.venv
 ```
 
 **3. Activate the virtual environment:**
 
-You must activate the environment before installing packages or running the application.
-
 _Windows (PowerShell):_
 ```powershell
-venv\Scripts\Activate.ps1
-```
-
-_Windows (Command Prompt):_
-```cmd
-venv\Scripts\activate.bat
+cd projects/01_hello_langchain
+.venv\Scripts\Activate.ps1
 ```
 
 _macOS / Linux:_
 ```bash
-source venv/bin/activate
-```
-
-Your prompt will show `(venv)` when the environment is active.
-
-**4. Install dependencies:**
-
-```bash
-pip install -r requirements-base.txt
-pip install -r projects/01_hello_langchain/requirements.txt
-```
-
-**5. Run:**
-
-```bash
 cd projects/01_hello_langchain
+source .venv/bin/activate
+```
+
+**4. Run:**
+
+```bash
 python src/main.py
 ```
 
-**6. Deactivate when done:**
+**5. Deactivate when done:**
 
 ```bash
 deactivate
