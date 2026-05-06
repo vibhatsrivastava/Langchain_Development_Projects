@@ -19,4 +19,6 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["common", "common/cache", "common/prompts"]
+# Note: Due to flat-layout with name mismatch (project: ai-agent-common, import: common),
+# editable installs require manual .pth file creation. This is handled by the CLI scaffold.
+packages = ["."]

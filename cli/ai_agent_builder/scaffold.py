@@ -339,6 +339,18 @@ class ProjectScaffolder:
             )
             print("     ✓ Installed ai-agent-common (runtime deps)")
 
+            # 2b. Fix editable install .pth file for flat-layout structure
+            self._fix_editable_common_install(venv_path)
+            print("     ✓ Fixed editable install path configuration")
+
+            # 2c. Verify import works
+            if self._verify_common_import(venv_path):
+                print("     ✓ Verified 'import common' works correctly")
+            else:
+                print("     ⚠️  Warning: 'import common' verification failed")
+                print("          Run manually: python -c \"import common\"")
+
+
             # 3. Install test/dev tooling
             if requirements_base.exists():
                 subprocess.run(
@@ -372,3 +384,60 @@ class ProjectScaffolder:
                 f"\n{stderr}",
                 file=sys.stderr,
             )
+
+    def _fix_editable_common_install(self, venv_path: Path) -> None:
+        """
+        Fix editable install .pth file for common package.
+
+        Due to flat-layout with name mismatch (project: ai-agent-common, import: common),
+        uv creates a .pth file pointing to .../common/ but for 'import common' to work,
+        we need the parent directory in sys.path.
+
+        This method updates the .pth file to point to the repo root instead.
+        """
+        site_packages = venv_path / "Lib" / "site-packages"
+        if not site_packages.exists():
+            # Try Unix-style path
+            site_packages = venv_path / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+
+        if not site_packages.exists():
+            return  # Can't find site-packages, skip
+
+        # Find the editable .pth file created by uv/pip
+        pth_files = list(site_packages.glob("_editable_impl_ai_agent_common.pth"))
+
+        if not pth_files:
+            # Fallback: create our own .pth file
+            pth_file = site_packages / "ai_agent_common.pth"
+        else:
+            pth_file = pth_files[0]
+
+        # Write repo root path (parent of common/) to .pth file
+        repo_root_str = str(self.repo_root)
+        pth_file.write_text(f"{repo_root_str}\n", encoding="utf-8")
+
+    def _verify_common_import(self, venv_path: Path) -> bool:
+        """
+        Verify that 'import common' works in the project venv.
+
+        Returns:
+            True if import succeeds, False otherwise
+        """
+        python_exe = venv_path / "Scripts" / "python.exe"
+        if not python_exe.exists():
+            # Try Unix-style path
+            python_exe = venv_path / "bin" / "python"
+
+        if not python_exe.exists():
+            return False
+
+        try:
+            result = subprocess.run(
+                [str(python_exe), "-c", "import common"],
+                check=True,
+                capture_output=True,
+                timeout=10
+            )
+            return result.returncode == 0
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            return False
