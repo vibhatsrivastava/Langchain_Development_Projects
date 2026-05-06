@@ -17,11 +17,11 @@ Any project can override the model at call time:
 """
 
 import os
-from dotenv import load_dotenv
 from langchain_ollama import OllamaLLM, ChatOllama, OllamaEmbeddings
 from common.vault import get_secret
+from common.utils import load_project_env
 
-load_dotenv()
+load_project_env()
 
 _BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 _API_KEY = get_secret(vault_key="OLLAMA_API_KEY", env_fallback_key="OLLAMA_API_KEY", default="")

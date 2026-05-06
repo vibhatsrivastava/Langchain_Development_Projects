@@ -61,12 +61,19 @@ class EnvManager:
         integrations: List[str],
     ) -> Path:
         """
-        Write .env.example file containing only integration-specific variables.
+        Write .env.example file containing ONLY integration-specific variables.
 
+        ⚠️ IMPORTANT: This file should ONLY exist when integrations are selected.
         Base Ollama/Vault variables are intentionally excluded — they live in
-        the repo-root .env and are found automatically via load_dotenv().
-        Add the variables listed here to the repo-root .env, not to a
-        project-level .env file.
+        the repo-root .env and are found automatically via load_project_env().
+        
+        The generated file is a template for creating a project-level .env file
+        with integration-specific variables (GITHUB_*, REDIS_*, PGVECTOR_*, etc.).
+        
+        Users should:
+        1. Copy this file to .env in the project directory
+        2. Configure the integration-specific values
+        3. Common variables (OLLAMA_*, VAULT_*) remain in repo-root .env only
 
         Args:
             project_path: Path to project directory
@@ -88,7 +95,8 @@ class EnvManager:
 
         with open(env_file, "w", encoding="utf-8") as f:
             f.write("# Integration-specific environment variables\n")
-            f.write("# Add these to the repo-root .env file (do NOT create a project-level .env)\n\n")
+            f.write("# Copy this file to .env in this project directory and configure these values.\n")
+            f.write("# Common variables (OLLAMA_*, VAULT_*, LOG_LEVEL) remain in repo-root .env only.\n\n")
 
             for key in sorted(integration_vars.keys()):
                 f.write(f"{key}={integration_vars[key]}\n")

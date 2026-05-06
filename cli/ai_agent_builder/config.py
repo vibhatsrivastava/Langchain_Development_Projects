@@ -100,7 +100,8 @@ PROJECT_STRUCTURE = {
         "tests/conftest.py": "conftest.py.j2",
         "tests/test_main.py": "test_main.py.j2",
         "requirements.txt": "requirements.txt.j2",
-        ".env.example": "env.example.j2",
+        # .env.example removed — only created by _generate_env_file() when integrations exist
+        # All base variables live in repo-root .env (found via load_dotenv())
         "README.md": "README.md.j2",
     },
 }

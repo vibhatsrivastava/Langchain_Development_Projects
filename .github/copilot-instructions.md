@@ -65,6 +65,8 @@ uv pip install -r requirements-base.txt
 
 **Required `.env` variables** (copy from `.env.example`):
 
+**Root `.env` (Common/Shared Variables)**:
+
 | Variable | Purpose | Example |
 |---|---|---|
 | `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` or remote URL |
@@ -72,6 +74,36 @@ uv pip install -r requirements-base.txt
 | `OLLAMA_MODEL` | Default LLM model | `gpt-oss:20b` |
 | `OLLAMA_EMBEDDING_MODEL` | Default embedding model | `nomic-embed-text` |
 | `LOG_LEVEL` | Logging verbosity | `INFO` |
+
+**Hierarchical Environment Loading Strategy:**
+
+This repository uses a **two-tier environment system** to keep the root `.env` clean and scalable:
+
+1. **Root `.env`** → Common/shared variables (OLLAMA_*, VAULT_*, LOG_LEVEL)
+2. **Project `.env`** (optional) → Integration-specific variables (GITHUB_*, REDIS_*, PGVECTOR_*, etc.)
+
+**How it works:**
+- `load_project_env()` from `common.utils` loads **both** root `.env` and project `.env` (if exists)
+- Simple projects (e.g., 01_hello_langchain) use only root `.env` — no project `.env` needed
+- Integration projects (e.g., 04_github_issue_reporter) add a project `.env` for integration variables
+- Project values override root values (allows per-project customization)
+
+**Example:**
+```
+Agentic_AI_Development_Framework/
+├── .env                           # Common: OLLAMA_*, VAULT_*, LOG_LEVEL
+├── projects/
+│   ├── 01_hello_langchain/        # ✅ No project .env (uses root .env only)
+│   └── 04_github_issue_reporter/
+│       ├── .env                   # ✅ GitHub-specific: GITHUB_TOKEN, etc.
+│       └── .env.example           # Template for project .env
+```
+
+**Benefits:**
+- ✅ Root `.env` stays clean as projects grow
+- ✅ Only configure tokens for integrations you actually use
+- ✅ Clear separation: common variables vs. integration variables
+- ✅ Backward compatible: existing projects continue to work
 
 **Optional: HashiCorp Vault Integration**
 
@@ -186,13 +218,21 @@ answer = result["messages"][-1].content
 ```
 projects/NN_project_name/
 ├── .venv/             # Per-project isolated venv (created by CLI, gitignored)
+├── .env               # Optional: Integration-specific variables (gitignored)
+├── .env.example       # Optional: Template for project .env (committed)
 ├── src/
 │   └── main.py            # Entry point; uses common/ imports
 ├── requirements.txt       # Project-specific deps only
 └── README.md              # Description, usage, sample output
 ```
 
-**Important**: Do NOT create project-level `.env` or `.env.example` files. All environment variables must be defined in the root-level `.env.example` and documented in the project's README if they're project-specific.
+**Environment Variable Guidelines:**
+
+- **Simple projects** (no integrations): No project `.env` or `.env.example` needed. Use root `.env` only.
+- **Integration projects** (GitHub, Redis, etc.): Create project `.env.example` as template, copy to `.env` for configuration.
+- **Common variables** (OLLAMA_*, VAULT_*, LOG_LEVEL): Always live in root `.env` only.
+- **Integration variables** (GITHUB_*, REDIS_*, PGVECTOR_*): Live in project `.env`.
+- All projects must use `load_project_env()` from `common.utils` to enable hierarchical loading.
 
 ---
 
@@ -328,8 +368,8 @@ python src/main.py
 
 - **`common/` import errors** — The project venv must have `ai-agent-common` installed. Run `uv pip install -e ./common` from the repo root targeting the project venv, or re-scaffold using `ai-agent-builder new-project`
 - **Do NOT add `sys.path.insert`** — `common/` is a proper installable package; path hacks are no longer needed or used
-- **`.env` not found** — `llm_factory.py` calls `load_dotenv()` which searches upward; ensure `.env` exists at repo root
-- **Project-level `.env` files** — NEVER create `.env` or `.env.example` files inside project directories; all environment configuration belongs in the root `.env` file. `load_dotenv()` searches upward from `common/` and will find the root `.env` automatically.
+- **`.env` not found** — `llm_factory.py` calls `load_project_env()` which searches upward; ensure `.env` exists at repo root
+- **Project `.env` usage** — Integration-specific projects (GitHub, Redis, etc.) MAY have a project `.env` file for integration variables only. Common variables (OLLAMA_*, VAULT_*) always live in root `.env`. Simple projects use only root `.env`. Projects automatically load both via `load_project_env()` from `common.utils`.
 - **Wrong LLM class** — Use `get_chat_llm()` (not `get_llm()`) for agents and LangGraph nodes; `OllamaLLM` does not support tool calling
 - **Model not available** — Run `ollama list` to see downloaded models; run `ollama pull <model>` if missing
 - **`OLLAMA_API_KEY` left blank for remote** — Remote Ollama servers require the Bearer token; check `.env`

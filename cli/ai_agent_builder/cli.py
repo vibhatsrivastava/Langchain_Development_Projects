@@ -192,7 +192,7 @@ def new_project(
         click.echo("  2. Activate the project venv:")
         click.echo("       Windows: .venv\\Scripts\\activate")
         click.echo("       Mac/Linux: source .venv/bin/activate")
-        click.echo("  3. Copy .env.example to .env and configure")
+        click.echo("  3. Ensure environment variables are set in repo-root .env")
         click.echo("  4. Run: python src/main.py")
         click.echo()
 
