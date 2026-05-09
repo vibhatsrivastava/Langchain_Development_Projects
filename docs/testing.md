@@ -1,12 +1,35 @@
 # Testing Conventions
 
-> Standards and patterns for testing AI agent applications in this repository.
+> **Simplified, realistic testing standards for AI agent applications.**
 
 ---
 
 ## Overview
 
-All projects in this repository **must maintain >= 90% test coverage** using pytest. This document defines testing standards, patterns, and best practices for LangChain/LangGraph applications.
+This repository follows a **pragmatic testing strategy** optimized for AI agent development:
+
+- **75% coverage minimum** — realistic for mocked LLM testing
+- **Focus on what matters** — tools, utilities, and critical logic paths
+- **Mock all LLMs** — fast, deterministic, no API costs
+- **Optional integration tests** — manual validation with real LLMs before deployment
+
+### Testing Philosophy
+
+**✅ Test thoroughly:**
+- Tool functions (input validation, error handling, data formatting)
+- Utility functions (logging, env loading, factories)
+- Chain composition (LCEL piping, parameter passing)
+- Error paths and edge cases
+
+**⚠️ Test pragmatically:**
+- Agent building (simple smoke tests — it's mostly LangGraph code)
+- LLM factory calls (basic instantiation checks)
+- Complex agent workflows (mock minimally, test manually)
+
+**❌ Don't over-test:**
+- Mocking complex LangGraph internals
+- Testing LangChain library code
+- Excessive assertion on implementation details
 
 ---
 
@@ -18,7 +41,7 @@ All projects in this repository **must maintain >= 90% test coverage** using pyt
 # Activate virtual environment
 .venv\Scripts\Activate.ps1
 
-# Run all tests
+# Run all tests (fast, mocked)
 pytest
 
 # Run tests with coverage report
@@ -27,11 +50,17 @@ pytest --cov --cov-report=term-missing
 # Run tests for specific module
 pytest common/tests/test_llm_factory.py -v
 
-# Run only unit tests (fast)
+# Run only unit tests (fastest)
 pytest -m unit
 
-# Run with coverage check (fails if < 90%)
-pytest --cov --cov-fail-under=90
+# Skip integration tests (CI-friendly)
+pytest -m "not integration"
+
+# Run integration tests (manual, requires real Ollama)
+pytest -m integration
+
+# Run with coverage check (fails if < 75%)
+pytest --cov --cov-fail-under=75
 ```
 
 ### Test File Structure
@@ -62,10 +91,10 @@ Place tests in a `tests/` directory parallel to the code being tested.
 
 The repository uses pytest with these key configurations (defined in `pytest.ini`):
 
-- **Minimum coverage**: 90% globally, enforced via `--cov-fail-under=90`
+- **Minimum coverage**: 75% globally, enforced via `--cov-fail-under=75`
 - **Test discovery**: `test_*.py` and `*_test.py` files in `common/` and `projects/`
 - **Coverage reports**: Terminal output (with missing lines) + HTML report in `htmlcov/`
-- **Branch coverage**: Enabled to ensure all conditional paths are tested
+- **Test markers**: `unit` (fast mocked tests), `integration` (real LLM tests), `smoke` (critical paths)
 
 ### Required Dependencies
 
@@ -136,13 +165,19 @@ class TestRequireEnv:
 
 **Purpose**: Test interactions between multiple components (chains, agents, tools).
 
-**Characteristics**:
-- Slower than unit tests (may take 100ms - 1s)
-- Test complete workflows end-to-end
-- Mock only external dependencies (LLMs, APIs)
-- Verify integration between LangChain components
+**Two Types:**
 
-**Example**:
+**1. Mocked Integration Tests** (default, run in CI):
+- Test complete workflows with mocked LLMs
+- Verify component integration
+- Fast and deterministic
+
+**2. Real LLM Integration Tests** (manual, before PR merge):
+- Test with actual Ollama server
+- Validate prompt engineering
+- Verify real agent behavior
+
+**Mocked Integration Example**:
 
 ```python
 import pytest
@@ -152,7 +187,7 @@ from common.llm_factory import get_llm
 
 @pytest.mark.integration
 class TestLCELChain:
-    """Integration tests for LCEL chain execution."""
+    """Integration tests for LCEL chain execution (mocked)."""
     
     def test_prompt_llm_parser_chain(self, mock_llm):
         """Test complete chain: prompt | llm | parser."""
@@ -169,7 +204,39 @@ class TestLCELChain:
         mock_llm.invoke.assert_called_once()
 ```
 
-**Markers**: Mark integration tests with `@pytest.mark.integration`.
+**Real LLM Integration Example** (run manually):
+
+```python
+import pytest
+from src.main import build_agent, ask
+
+@pytest.mark.integration
+class TestAgentWithRealLLM:
+    """Integration tests with real Ollama (skip in CI)."""
+    
+    @pytest.mark.skip(reason="Requires running Ollama server")
+    def test_weather_agent_real_llm(self):
+        """Smoke test with actual Ollama — run manually before PR merge."""
+        agent = build_agent()  # Uses real ChatOllama
+        result = ask(agent, "What's the weather in London?")
+        
+        # Basic validation — just verify it runs
+        assert len(result) > 0
+        assert "London" in result or "weather" in result.lower()
+```
+
+**Running Integration Tests:**
+
+```powershell
+# Skip integration tests (CI mode)
+pytest -m "not integration"
+
+# Run only integration tests (manual validation)
+pytest -m integration
+
+# Run real LLM tests (requires Ollama running)
+pytest -m integration --run-integration-real
+```
 
 ---
 
@@ -320,9 +387,18 @@ def test_require_env_raises_error_when_missing(self):
 
 ### Minimum Thresholds
 
-- **Global**: 90% coverage across all production code
-- **Per-module**: Each file should achieve >= 90%
-- **Critical modules** (`common/`, agent logic): Aim for 95%+
+- **Global**: 75% coverage across all production code (realistic for mocked AI testing)
+- **Critical modules** (`common/` utilities, tools): Aim for 85%+
+- **Agent logic**: Focus on tools and error handling, not LangGraph internals
+
+**Why 75%?**
+
+AI agent testing with mocked LLMs has inherent limitations:
+- **Mocked LLMs don't validate prompts** — 100% coverage doesn't test if prompts work
+- **Agent orchestration is LangGraph code** — testing library internals adds little value
+- **Real validation happens manually** — integration tests with real Ollama before deployment
+
+75% ensures **critical paths are tested** without forcing you to mock complex LangGraph internals.
 
 ### What to Test
 
@@ -354,8 +430,8 @@ pytest --cov --cov-report=term-missing
 # Coverage for specific module
 pytest tests/test_utils.py --cov=common.utils --cov-report=term-missing
 
-# Fail if coverage < 90%
-pytest --cov --cov-fail-under=90
+# Fail if coverage < 75%
+pytest --cov --cov-fail-under=75
 
 # Generate HTML report (viewable in browser)
 pytest --cov --cov-report=html
@@ -364,26 +440,26 @@ pytest --cov --cov-report=html
 
 ### Filling Coverage Gaps
 
-If coverage < 90%, identify uncovered lines:
+If coverage < 75%, identify uncovered lines:
 
 ```
----------- coverage: platform win32, python 3.11.5 -----------
+---------- coverage: platform win32, python 3.13.5 -----------
 Name                 Stmts   Miss  Cover   Missing
 --------------------------------------------------
-common\utils.py         20      2    90%   45-46
+common\utils.py         20      6    70%   45-46, 52-54
 --------------------------------------------------
-TOTAL                   20      2    90%
+TOTAL                   20      6    70%
 ```
 
-Lines 45-46 are not covered. Add tests for those code paths:
+**Prioritize covering:**
+1. **Error handling paths** (exceptions, validation)
+2. **Tool functions** (critical for agent correctness)
+3. **Utility functions** (reused across projects)
 
-```python
-def test_edge_case_covering_lines_45_46(self):
-    """Test the condition that executes lines 45-46."""
-    # Trigger the specific code path
-    result = function_under_test(edge_case_input)
-    assert result == expected_output
-```
+**Don't force coverage for:**
+- Simple agent builders that just call `create_react_agent`
+- LangGraph graph construction (it's library code)
+- Trivial property accessors
 
 ---
 

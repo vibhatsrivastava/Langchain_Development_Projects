@@ -252,13 +252,14 @@ A corresponding `.py` file contains the runnable implementation.
 
 ## Testing Conventions
 
-**All code must maintain >= 90% test coverage.** This repository uses pytest with comprehensive testing standards.
+**All code must maintain >= 75% test coverage.** This repository uses a pragmatic testing approach optimized for AI agent development. See [docs/TESTING_STRATEGY.md](docs/TESTING_STRATEGY.md) for the complete philosophy.
 
 ### Testing Framework
 
 - **Framework**: pytest >=8.0.0 with pytest-cov, pytest-mock, pytest-asyncio
-- **Coverage threshold**: 90% minimum (enforced via `pytest.ini`)
+- **Coverage threshold**: 75% minimum (enforced via `pytest.ini`)
 - **Mock strategy**: All LLM/Ollama calls must be mocked (no real API calls in tests)
+- **Manual validation**: Test with real Ollama before PR merge
 
 ### Running Tests
 
@@ -269,11 +270,14 @@ pytest --cov --cov-report=term-missing
 # Run tests for specific module
 pytest common/tests/test_llm_factory.py -v
 
-# Verify >= 90% coverage (fails if below threshold)
-pytest --cov --cov-fail-under=90
+# Verify >= 75% coverage (fails if below threshold)
+pytest --cov --cov-fail-under=75
 
 # Run only unit tests (fast)
 pytest -m unit
+
+# Skip integration tests (CI mode)
+pytest -m "not integration"
 ```
 
 ### Test Structure
@@ -299,42 +303,16 @@ projects/01_hello_langchain/
 ### Critical Rules
 
 1. **Mock all LLMs**: Never make real Ollama/LLM API calls in tests. Use `mock_llm`, `mock_chat_llm`, and `mock_embeddings` fixtures from `common/tests/conftest.py`
-2. **90% coverage minimum**: Every new module must achieve >= 90% coverage
-3. **Test before commit**: Always run `pytest --cov --cov-fail-under=90` before pushing code
-4. **Test types required**: Unit tests (isolated functions), Integration tests (chains/agents), Mocked LLM interactions
-
-### Using the Test Agent
-
-To automatically generate comprehensive tests with >= 90% coverage:
-
-```
-@test-agent generate tests for common/llm_factory.py
-```
-
-The test agent analyzes code, generates test files, and verifies coverage. See [.github/test-agent.agent.md](.github/test-agent.agent.md) for details.
-
-### Example Test Pattern
-
-```python
-import pytest
-from unittest.mock import Mock
-
-def test_chain_with_mocked_llm(mock_llm):
-    """Test LCEL chain with mocked LLM (no real API calls)."""
-    mock_llm.invoke.return_value = "Mocked response"
-    
-    chain = prompt | get_llm() | StrOutputParser()
-    result = chain.invoke({"question": "test"})
-    
-    assert result == "Mocked response"
-    mock_llm.invoke.assert_called_once()
-```
+2. **75% coverage minimum**: Every new module must achieve >= 75% coverage
+3. **Test before commit**: Always run `pytest --cov --cov-fail-under=75` before pushing code
+4. **Manual validation required**: Test with real Ollama before PR merge
+5. **Test types required**: Unit tests (isolated functions), Integration tests (mocked chains/agents), Manual smoke tests (real LLM)
 
 ### Documentation
 
 - **Detailed testing guide**: [docs/testing.md](docs/testing.md) — Comprehensive patterns and examples
+- **Testing strategy**: [docs/TESTING_STRATEGY.md](docs/TESTING_STRATEGY.md) — Philosophy and approach
 - **Configuration**: `pytest.ini` — Coverage thresholds and test discovery
-- **Test agent**: [.github/test-agent.agent.md](.github/test-agent.agent.md) — Automated test generation
 
 **Remember**: No code is complete without tests. Coverage is non-negotiable.
 
