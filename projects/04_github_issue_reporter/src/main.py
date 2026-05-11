@@ -8,6 +8,16 @@ A dual-mode ReAct agent that:
 Uses LangGraph's create_react_agent with GitHub REST API tools.
 """
 
+import sys
+from pathlib import Path
+
+# Workaround: Add repository root to sys.path (Python 3.14 .pth compatibility issue)
+# This ensures the common package can be imported regardless of .pth file loading
+# Path: src/main.py -> src -> 04_github_issue_reporter -> projects -> repo_root
+_repo_root = Path(__file__).parent.parent.parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
 import argparse
 import json
 import requests
@@ -16,7 +26,12 @@ from langchain.agents import create_agent
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from common.llm_factory import get_chat_llm
-from common.utils import get_logger, require_env
+from common.utils import get_logger, require_env, load_project_env
+
+# Load environment variables (root .env + project .env)
+# Project directory is parent of src/ directory where this file lives
+PROJECT_DIR = Path(__file__).parent.parent
+load_project_env(PROJECT_DIR)
 
 logger = get_logger(__name__)
 

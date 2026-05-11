@@ -153,3 +153,52 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("OLLAMA_MODEL", "test-model")
     monkeypatch.setenv("OLLAMA_EMBEDDING_MODEL", "test-embed-model")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+
+
+@pytest.fixture
+def mock_langfuse():
+    """
+    Provides a mock CallbackHandler class and instance for testing.
+
+    Returns a tuple of (mock_handler_class, mock_handler_instance).
+    
+    Tests should patch "langfuse.callback.CallbackHandler" with mock_handler_class
+    using mocker.patch(), then proceed with testing.
+
+    Usage:
+        def test_with_langfuse(mock_langfuse, mocker, monkeypatch):
+            mock_handler_class, mock_handler_instance = mock_langfuse
+            
+            # Patch the import
+            mocker.patch("langfuse.callback.CallbackHandler", mock_handler_class)
+            
+            # Enable Langfuse in test environment
+            monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+            monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+            monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+
+            # Reset handler to force re-initialization
+            from common.langfuse_tracing import reset_handler
+            reset_handler()
+
+            # Get LLM with callback attached
+            from common.llm_factory import get_chat_llm
+            llm = get_chat_llm()
+
+            # Verify mock was instantiated
+            mock_handler_class.assert_called_once()
+
+    The mock provides typical CallbackHandler interface methods:
+        - on_llm_start
+        - on_llm_end
+        - on_llm_error
+        - on_chain_start
+        - on_chain_end
+        - on_tool_start
+        - on_tool_end
+    """
+    mock_handler_class = Mock()
+    mock_handler_instance = Mock()
+    mock_handler_class.return_value = mock_handler_instance
+    
+    return (mock_handler_class, mock_handler_instance)
