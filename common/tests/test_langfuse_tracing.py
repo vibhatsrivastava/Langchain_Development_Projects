@@ -29,12 +29,12 @@ def test_get_callback_handler_enabled_with_keys(monkeypatch, mock_langfuse):
     monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test-456")
     monkeypatch.setenv("LANGFUSE_HOST", "http://test-langfuse:3000")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         # Mock get_secret to return env vars (simulating .env fallback)
@@ -55,7 +55,7 @@ def test_get_callback_handler_enabled_with_keys(monkeypatch, mock_langfuse):
         )
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -80,12 +80,12 @@ def test_get_callback_handler_missing_public_key(monkeypatch, mock_langfuse):
     reset_handler()
     monkeypatch.setenv("LANGFUSE_ENABLED", "true")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         # Mock get_secret to return empty for public key
@@ -101,7 +101,7 @@ def test_get_callback_handler_missing_public_key(monkeypatch, mock_langfuse):
         mock_handler_class.assert_not_called()
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -114,12 +114,12 @@ def test_get_callback_handler_missing_secret_key(monkeypatch, mock_langfuse):
     reset_handler()
     monkeypatch.setenv("LANGFUSE_ENABLED", "true")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         # Mock get_secret to return empty for secret key
@@ -135,7 +135,7 @@ def test_get_callback_handler_missing_secret_key(monkeypatch, mock_langfuse):
         mock_handler_class.assert_not_called()
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -151,9 +151,9 @@ def test_get_callback_handler_import_error(monkeypatch):
     # Ensure sys.modules is clean (no mock modules from other tests)
     import sys
     sys.modules.pop('langfuse', None)
-    sys.modules.pop('langfuse.callback', None)
+    sys.modules.pop('langfuse.langchain', None)
     
-    # Mock ImportError for langfuse.callback
+    # Mock ImportError for langfuse.langchain
     with patch("common.langfuse_tracing.get_secret") as mock_get_secret:
         mock_get_secret.return_value = "test-key"
         
@@ -162,7 +162,7 @@ def test_get_callback_handler_import_error(monkeypatch):
         original_import = builtins.__import__
         
         def mock_import(name, *args, **kwargs):
-            if name == "langfuse.callback" or name == "langfuse":
+            if name == "langfuse.langchain" or name == "langfuse":
                 raise ImportError("No module named 'langfuse'")
             return original_import(name, *args, **kwargs)
         
@@ -188,12 +188,12 @@ def test_get_callback_handler_caching(monkeypatch, mock_langfuse):
     monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
     monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         with patch("common.langfuse_tracing.get_secret") as mock_get_secret:
@@ -215,7 +215,7 @@ def test_get_callback_handler_caching(monkeypatch, mock_langfuse):
         assert mock_handler_class.call_count == 1
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -231,12 +231,12 @@ def test_get_callback_handler_vault_integration(monkeypatch, mock_langfuse):
     # Clear any existing LANGFUSE_HOST to use default
     monkeypatch.delenv("LANGFUSE_HOST", raising=False)
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         # Mock get_secret to simulate Vault response
@@ -265,7 +265,7 @@ def test_get_callback_handler_vault_integration(monkeypatch, mock_langfuse):
         )
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -279,12 +279,12 @@ def test_get_callback_handler_custom_host(monkeypatch, mock_langfuse):
     monkeypatch.setenv("LANGFUSE_ENABLED", "true")
     monkeypatch.setenv("LANGFUSE_HOST", "http://custom-host:9000")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         with patch("common.langfuse_tracing.get_secret") as mock_get_secret:
@@ -302,7 +302,7 @@ def test_get_callback_handler_custom_host(monkeypatch, mock_langfuse):
         )
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -318,12 +318,12 @@ def test_get_callback_handler_initialization_error(monkeypatch, mock_langfuse):
     # Make CallbackHandler raise an exception
     mock_handler_class.side_effect = Exception("Connection failed")
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         with patch("common.langfuse_tracing.get_secret") as mock_get_secret:
@@ -337,7 +337,7 @@ def test_get_callback_handler_initialization_error(monkeypatch, mock_langfuse):
         assert handler is None
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -359,12 +359,12 @@ def test_get_callback_handler_enabled_variants(monkeypatch, mock_langfuse):
     
     mock_handler_class, mock_handler_instance = mock_langfuse
     
-    # Mock langfuse.callback module in sys.modules
+    # Mock langfuse.langchain module in sys.modules
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
     sys.modules['langfuse'] = Mock()
-    sys.modules['langfuse.callback'] = mock_callback_module
+    sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
         with patch("common.langfuse_tracing.get_secret") as mock_get_secret:
@@ -381,7 +381,7 @@ def test_get_callback_handler_enabled_variants(monkeypatch, mock_langfuse):
                 assert handler is not None, f"Failed for LANGFUSE_ENABLED={enabled_value}"
     finally:
         # Clean up sys.modules
-        sys.modules.pop('langfuse.callback', None)
+        sys.modules.pop('langfuse.langchain', None)
         sys.modules.pop('langfuse', None)
 
 
@@ -395,3 +395,4 @@ def test_get_callback_handler_disabled_variants(monkeypatch):
         
         handler = get_langfuse_callback_handler()
         assert handler is None, f"Failed for LANGFUSE_ENABLED={disabled_value}"
+

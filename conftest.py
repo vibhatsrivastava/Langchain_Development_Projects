@@ -162,7 +162,7 @@ def mock_langfuse():
 
     Returns a tuple of (mock_handler_class, mock_handler_instance).
     
-    Tests should patch "langfuse.callback.CallbackHandler" with mock_handler_class
+    Tests should patch "langfuse.langchain.CallbackHandler" with mock_handler_class
     using mocker.patch(), then proceed with testing.
 
     Usage:
@@ -170,7 +170,7 @@ def mock_langfuse():
             mock_handler_class, mock_handler_instance = mock_langfuse
             
             # Patch the import
-            mocker.patch("langfuse.callback.CallbackHandler", mock_handler_class)
+            mocker.patch("langfuse.langchain.CallbackHandler", mock_handler_class)
             
             # Enable Langfuse in test environment
             monkeypatch.setenv("LANGFUSE_ENABLED", "true")
