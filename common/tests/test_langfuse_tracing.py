@@ -33,7 +33,13 @@ def test_get_callback_handler_enabled_with_keys(monkeypatch, mock_langfuse):
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
-    sys.modules['langfuse'] = Mock()
+    
+    # Mock Langfuse client class (initialized first in Langfuse 4.x)
+    mock_langfuse_client = Mock()
+    mock_langfuse_module = Mock()
+    mock_langfuse_module.Langfuse = mock_langfuse_client
+    
+    sys.modules['langfuse'] = mock_langfuse_module
     sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
@@ -48,11 +54,16 @@ def test_get_callback_handler_enabled_with_keys(monkeypatch, mock_langfuse):
         
         # Verify handler was created
         assert handler is not None
-        mock_handler_class.assert_called_once_with(
+        
+        # In Langfuse 4.x, global client is initialized first with keys
+        mock_langfuse_client.assert_called_once_with(
             public_key="pk-test-123",
             secret_key="sk-test-456",
             host="http://test-langfuse:3000",
         )
+        
+        # Then CallbackHandler is created with no arguments (uses global client)
+        mock_handler_class.assert_called_once_with()
     finally:
         # Clean up sys.modules
         sys.modules.pop('langfuse.langchain', None)
@@ -235,7 +246,13 @@ def test_get_callback_handler_vault_integration(monkeypatch, mock_langfuse):
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
-    sys.modules['langfuse'] = Mock()
+    
+    # Mock Langfuse client class (initialized first in Langfuse 4.x)
+    mock_langfuse_client = Mock()
+    mock_langfuse_module = Mock()
+    mock_langfuse_module.Langfuse = mock_langfuse_client
+    
+    sys.modules['langfuse'] = mock_langfuse_module
     sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
@@ -258,11 +275,16 @@ def test_get_callback_handler_vault_integration(monkeypatch, mock_langfuse):
         
         # Verify handler was created with Vault keys
         assert handler is not None
-        mock_handler_class.assert_called_once_with(
+        
+        # In Langfuse 4.x, global client is initialized first with keys
+        mock_langfuse_client.assert_called_once_with(
             public_key="pk-from-vault",
             secret_key="sk-from-vault",
             host="https://cloud.langfuse.com",  # default host
         )
+        
+        # Then CallbackHandler is created with no arguments (uses global client)
+        mock_handler_class.assert_called_once_with()
     finally:
         # Clean up sys.modules
         sys.modules.pop('langfuse.langchain', None)
@@ -283,7 +305,13 @@ def test_get_callback_handler_custom_host(monkeypatch, mock_langfuse):
     import sys
     mock_callback_module = Mock()
     mock_callback_module.CallbackHandler = mock_handler_class
-    sys.modules['langfuse'] = Mock()
+    
+    # Mock Langfuse client class (initialized first in Langfuse 4.x)
+    mock_langfuse_client = Mock()
+    mock_langfuse_module = Mock()
+    mock_langfuse_module.Langfuse = mock_langfuse_client
+    
+    sys.modules['langfuse'] = mock_langfuse_module
     sys.modules['langfuse.langchain'] = mock_callback_module
     
     try:
@@ -295,11 +323,15 @@ def test_get_callback_handler_custom_host(monkeypatch, mock_langfuse):
             
             handler = get_langfuse_callback_handler()
         
-        mock_handler_class.assert_called_once_with(
+        # In Langfuse 4.x, global client is initialized first with keys
+        mock_langfuse_client.assert_called_once_with(
             public_key="pk-test",
             secret_key="sk-test",
             host="http://custom-host:9000",
         )
+        
+        # Then CallbackHandler is created with no arguments (uses global client)
+        mock_handler_class.assert_called_once_with()
     finally:
         # Clean up sys.modules
         sys.modules.pop('langfuse.langchain', None)
