@@ -779,6 +779,62 @@ docker run --rm \
   github-issue-reporter --report
 ```
 
+### Ansible AWX Deployment (Recommended for Production)
+
+**AWX Integration** enables scheduled execution, on-demand triggering, and centralized credential management for the GitHub Issue Reporter agent.
+
+**Features:**
+- 🕐 **Scheduled Execution**: Automate issue analysis on a cron schedule (daily, hourly, weekly)
+- 🚀 **On-Demand Triggering**: Launch jobs manually via AWX UI or API
+- 🔐 **Secure Credential Management**: Store GitHub tokens and Ollama API keys in AWX credentials
+- 📊 **Survey Forms**: Collect execution parameters (mode, issue number, dry run) via UI
+- 📈 **Job History & Logs**: Track execution history, view logs, and monitor success rates
+- 🔗 **Webhook Integration**: Trigger analysis automatically when new issues are opened on GitHub
+
+**Quick Start:**
+
+1. **AWX Setup Files**: All required files are in the `awx/` directory:
+   - `playbook.yml` — Ansible playbook for agent execution
+   - `survey.json` — AWX survey specification for UI parameters
+   - `credentials.yml` — Custom credential type definitions
+   - `README.md` — Complete setup guide (7 sections, 300+ lines)
+
+2. **Setup Steps** (see `awx/README.md` for details):
+   - Import credential types (Ollama, GitHub, Langfuse)
+   - Create credentials with GitHub token and repository config
+   - Create AWX project pointing to this repository
+   - Create job template with playbook and survey
+   - Test execution manually
+   - Configure schedule for automated runs
+
+3. **Usage Patterns**:
+   - **Daily Auto-Analysis**: Automatically analyze new issues every morning
+   - **Manual Issue Analysis**: Analyze specific issues on demand via AWX UI
+   - **Webhook-Triggered**: Auto-analyze new issues immediately when opened
+   - **Scheduled Reports**: Generate weekly issue reports for stakeholder review
+
+**Example AWX Job Template**:
+- **Name**: `GitHub Issue Reporter - Run Agent`
+- **Playbook**: `projects/04_github_issue_reporter/awx/playbook.yml`
+- **Survey**: Execution Mode (report/issue/auto-analyze), Issue Number, Dry Run, Max Issues, Log Level
+- **Credentials**: Ollama API, GitHub API, Langfuse (optional)
+- **Schedule**: Daily at 9:00 AM UTC (for auto-analyze mode)
+
+**Expected Output** (JSON format for Ansible parsing):
+```json
+{
+  "status": "success",
+  "result": "**Open Issues Report**\n\n| # | Title | ...",
+  "metadata": {
+    "agent": "04_github_issue_reporter",
+    "execution_time": 12.34,
+    "awx_job_id": "12345"
+  }
+}
+```
+
+**For detailed setup instructions**, see [`awx/README.md`](awx/README.md).
+
 ---
 
 ## Testing

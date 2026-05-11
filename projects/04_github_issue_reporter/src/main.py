@@ -20,6 +20,7 @@ if str(_repo_root) not in sys.path:
 
 import argparse
 import json
+import os
 import requests
 from datetime import date, datetime, timedelta, timezone
 from langchain.agents import create_agent
@@ -523,11 +524,73 @@ def format_report(issues_data: dict) -> str:
 
 
 def main():
-    """Main entry point with CLI argument parsing."""
-    parser = argparse.ArgumentParser(
-        description="GitHub Issue Reporter & Solution Recommender Agent",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Examples:
+    """
+    Main entry point with CLI argument parsing and environment variable fallback.
+    
+    Supports two execution modes:
+    1. CLI: python src/main.py --report (or --issue N, --auto-analyze)
+    2. AWX: python -m common.awx_wrapper 04_github_issue_reporter
+       (reads MODE, ISSUE_NUMBER, DRY_RUN, MAX_ISSUES from environment)
+    """
+    # Check if running via AWX wrapper (MODE environment variable set)
+    awx_mode = os.getenv("MODE")
+    
+    if awx_mode:
+        # AWX mode: Read parameters from environment variables
+        logger.info(f"Running in AWX mode with MODE={awx_mode}")
+        
+        # Parse AWX parameters
+        mode = awx_mode.lower()
+        issue_number = None
+        dry_run = False
+        max_issues = 100
+        
+        if mode == "issue":
+            issue_number_str = os.getenv("ISSUE_NUMBER", "")
+            if not issue_number_str:
+                error_msg = "MODE=issue requires ISSUE_NUMBER environment variable"
+                logger.error(error_msg)
+                print(f"\n❌ {error_msg}")
+                return error_msg
+            try:
+                issue_number = int(issue_number_str)
+                if issue_number <= 0:
+                    raise ValueError("Issue number must be positive")
+            except ValueError as e:
+                error_msg = f"Invalid ISSUE_NUMBER: {e}"
+                logger.error(error_msg)
+                print(f"\n❌ {error_msg}")
+                return error_msg
+        
+        if mode == "auto-analyze":
+            dry_run = os.getenv("DRY_RUN", "false").lower() == "true"
+            try:
+                max_issues = int(os.getenv("MAX_ISSUES", "100"))
+                if max_issues <= 0:
+                    raise ValueError("Max issues must be positive")
+            except ValueError as e:
+                error_msg = f"Invalid MAX_ISSUES: {e}"
+                logger.error(error_msg)
+                print(f"\n❌ {error_msg}")
+                return error_msg
+        
+        # Create args object compatible with CLI mode
+        class AWXArgs:
+            def __init__(self, mode, issue_number, dry_run, max_issues):
+                self.report = (mode == "report")
+                self.issue = issue_number
+                self.auto_analyze = (mode == "auto-analyze")
+                self.dry_run = dry_run
+                self.max_issues = max_issues
+        
+        args = AWXArgs(mode, issue_number, dry_run, max_issues)
+        
+    else:
+        # CLI mode: Parse command line arguments
+        parser = argparse.ArgumentParser(
+            description="GitHub Issue Reporter & Solution Recommender Agent",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""Examples:
   # List all open issues
   python src/main.py --report
 
@@ -540,48 +603,48 @@ def main():
   # Preview auto-analyze without posting comments
   python src/main.py --auto-analyze --dry-run
         """
-    )
-    
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--report",
-        action="store_true",
-        help="Generate a report of all open issues in the configured repository"
-    )
-    group.add_argument(
-        "--issue",
-        type=int,
-        metavar="NUMBER",
-        help="Analyze a specific issue and post AI recommendation to GitHub"
-    )
-    group.add_argument(
-        "--auto-analyze",
-        action="store_true",
-        help="Auto-analyze all issues opened in the last 24 hours and post recommendations"
-    )
-    
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview actions without posting comments to GitHub (only with --auto-analyze)"
-    )
-    parser.add_argument(
-        "--max-issues",
-        type=int,
-        default=100,
-        metavar="N",
-        help="Maximum number of issues to process in auto-analyze mode (default: 100)"
-    )
-    
-    args = parser.parse_args()
+        )
+        
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            "--report",
+            action="store_true",
+            help="Generate a report of all open issues in the configured repository"
+        )
+        group.add_argument(
+            "--issue",
+            type=int,
+            metavar="NUMBER",
+            help="Analyze a specific issue and post AI recommendation to GitHub"
+        )
+        group.add_argument(
+            "--auto-analyze",
+            action="store_true",
+            help="Auto-analyze all issues opened in the last 24 hours and post recommendations"
+        )
+        
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Preview actions without posting comments to GitHub (only with --auto-analyze)"
+        )
+        parser.add_argument(
+            "--max-issues",
+            type=int,
+            default=100,
+            metavar="N",
+            help="Maximum number of issues to process in auto-analyze mode (default: 100)"
+        )
+        
+        args = parser.parse_args()
 
-    # Validate arguments
-    if args.issue is not None and args.issue <= 0:
-        parser.error("--issue must be a positive integer")
-    if args.dry_run and not args.auto_analyze:
-        parser.error("--dry-run can only be used with --auto-analyze")
-    if args.max_issues <= 0:
-        parser.error("--max-issues must be a positive integer")
+        # Validate arguments
+        if args.issue is not None and args.issue <= 0:
+            parser.error("--issue must be a positive integer")
+        if args.dry_run and not args.auto_analyze:
+            parser.error("--dry-run can only be used with --auto-analyze")
+        if args.max_issues <= 0:
+            parser.error("--max-issues must be a positive integer")
 
     # Load configuration from environment
     try:
