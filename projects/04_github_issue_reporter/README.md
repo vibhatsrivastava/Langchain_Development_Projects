@@ -70,6 +70,16 @@ This agent uses LangGraph's ReAct (Reasoning + Acting) pattern to orchestrate mu
 - Configurable issue limit prevents rate limiting
 - Comprehensive summary report after batch processing
 
+✅ **Multi-Repository Support** (NEW)
+- Process multiple repositories in a single run
+- Flexible token management:
+  - Shared token for all repositories
+  - Per-repository token overrides
+  - Mixed mode (some shared, some per-repo)
+- Configuration via JSON file (`repos.json`)
+- Sequential processing with clear per-repo output
+- Backward compatible with single-repo environment variables
+
 ✅ **Robust Error Handling**
 - Graceful handling of HTTP errors (404, 403, 429)
 - Clear error messages for configuration issues
@@ -78,7 +88,7 @@ This agent uses LangGraph's ReAct (Reasoning + Acting) pattern to orchestrate mu
 - Detects insufficient token permissions and provides guidance
 
 ✅ **Security Hardened**
-- Secure token management via environment variables
+- Secure token management via environment variables or config file
 - Content truncation to prevent context overflow
 - Prompt injection mitigation with XML delimiters
 - No sensitive data logging
@@ -174,38 +184,44 @@ Argument Parser (--report | --issue N | --auto-analyze)
 
 ### Tool Descriptions
 
-1. **`list_open_issues(owner, repo)`**
+1. **`list_open_issues(owner, repo, token=None)`**
    - Fetches all open issues (paginated, max 2 pages)
    - Computes age and staleness metrics
    - Excludes pull requests
    - Returns JSON with issue metadata
+   - **NEW:** Optional token parameter for multi-repo support
 
-2. **`get_issue_details(owner, repo, issue_number)`**
+2. **`get_issue_details(owner, repo, issue_number, token=None)`**
    - Fetches single issue details
    - Truncates body to 4000 chars (context window protection)
    - Returns JSON with full issue data
+   - **NEW:** Optional token parameter for multi-repo support
 
-3. **`get_issue_comments(owner, repo, issue_number)`**
+3. **`get_issue_comments(owner, repo, issue_number, token=None)`**
    - Fetches top 10 comments for an issue
    - Truncates each comment to 1000 chars
    - Returns JSON with comment metadata
+   - **NEW:** Optional token parameter for multi-repo support
 
-4. **`check_existing_bot_comments(owner, repo, issue_number)` (NEW)**
+4. **`check_existing_bot_comments(owner, repo, issue_number, token=None)` (NEW)**
    - Searches issue comments for bot marker (`<!-- AI-ANALYSIS-BOT -->`)
    - Prevents duplicate recommendations
    - Returns boolean flag and comment ID if found
+   - **NEW:** Optional token parameter for multi-repo support
 
-5. **`post_issue_comment(owner, repo, issue_number, comment_body)` (NEW)**
+5. **`post_issue_comment(owner, repo, issue_number, comment_body, token=None)` (NEW)**
    - Posts AI recommendation as a GitHub comment
    - Formats comment with collapsible details block
    - Includes hidden bot marker for duplicate detection
    - Returns comment URL and timestamp
+   - **NEW:** Optional token parameter for multi-repo support
 
-6. **`list_recent_issues(owner, repo, hours=24)` (NEW)**
+6. **`list_recent_issues(owner, repo, hours=24, token=None)` (NEW)**
    - Fetches issues created within last N hours (default 24)
    - Filters by creation timestamp
    - Excludes pull requests
    - Returns JSON with recent issues metadata
+   - **NEW:** Optional token parameter for multi-repo support
 
 ---
 
@@ -548,6 +564,147 @@ Skipped (already analyzed): 1
 ```powershell
 # Process maximum of 10 issues (default is 100)
 python src\main.py --auto-analyze --max-issues 10
+```
+
+---
+
+### Multi-Repository Mode
+
+**NEW:** Process multiple repositories in a single run using a configuration file.
+
+#### Configuration File Setup
+
+Create a `repos.json` file from the example template:
+
+```powershell
+# From project directory (04_github_issue_reporter/)
+Copy-Item repos.json.example repos.json
+
+# Edit with your repository configuration
+notepad repos.json
+```
+
+**Configuration Format:**
+
+```json
+{
+  "default_token": "ghp_your_shared_github_token_here",
+  "repositories": [
+    {
+      "owner": "myorg",
+      "name": "repo1"
+    },
+    {
+      "owner": "myorg",
+      "name": "repo2"
+    },
+    {
+      "owner": "othercorp",
+      "name": "private-repo",
+      "token": "ghp_specific_token_for_this_repo"
+    }
+  ]
+}
+```
+
+**Configuration Options:**
+
+1. **Shared Token Mode**: All repositories use the same token
+   - Set `default_token` at the top level
+   - Repositories without `token` field use the `default_token`
+
+2. **Per-Repository Token Mode**: Each repository has its own token
+   - Set `token` field in each repository object
+   - Overrides `default_token` when specified
+
+3. **Mixed Mode**: Combination of shared and per-repo tokens
+   - Some repositories use `default_token`
+   - Others override with their own `token` field
+
+#### Multi-Repository Commands
+
+All modes support the `--repos-config` flag:
+
+```powershell
+# Report mode: Generate reports for all repositories
+python src\main.py --report --repos-config repos.json
+
+# Issue mode: Analyze issue #42 in all repositories
+python src\main.py --issue 42 --repos-config repos.json
+
+# Auto-analyze mode: Process recent issues in all repositories
+python src\main.py --auto-analyze --repos-config repos.json
+
+# With dry-run preview
+python src\main.py --auto-analyze --dry-run --repos-config repos.json
+```
+
+**Example Output (Multi-Repo Report):**
+
+```markdown
+================================================================================
+Repository 1/3: myorg/repo1
+================================================================================
+
+**Open Issues Report**
+...
+
+================================================================================
+Repository 2/3: myorg/repo2
+================================================================================
+
+**Open Issues Report**
+...
+
+================================================================================
+Repository 3/3: othercorp/private-repo
+================================================================================
+
+**Open Issues Report**
+...
+```
+
+#### Multi-Repository Use Cases
+
+**Scenario 1: Multiple Repositories, Same Organization**
+```json
+{
+  "default_token": "ghp_shared_org_token",
+  "repositories": [
+    {"owner": "myorg", "name": "frontend"},
+    {"owner": "myorg", "name": "backend"},
+    {"owner": "myorg", "name": "mobile-app"}
+  ]
+}
+```
+
+**Scenario 2: Multiple Organizations, Different Tokens**
+```json
+{
+  "repositories": [
+    {"owner": "company-a", "name": "repo1", "token": "ghp_company_a_token"},
+    {"owner": "company-b", "name": "repo2", "token": "ghp_company_b_token"}
+  ]
+}
+```
+
+**Scenario 3: Personal and Work Repositories**
+```json
+{
+  "default_token": "ghp_personal_token",
+  "repositories": [
+    {"owner": "myusername", "name": "personal-project1"},
+    {"owner": "myusername", "name": "personal-project2"},
+    {"owner": "work-org", "name": "work-project", "token": "ghp_work_token"}
+  ]
+}
+```
+
+---
+
+### Legacy Single-Repository Mode
+
+The original environment variable approach still works for single repositories:
 ```
 
 **Use case:** Prevent rate limiting or excessive LLM costs in very active repositories.
