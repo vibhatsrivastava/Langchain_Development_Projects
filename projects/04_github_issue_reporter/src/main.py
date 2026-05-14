@@ -32,6 +32,7 @@ import json
 import os
 import requests
 from datetime import date, datetime, timedelta, timezone
+from typing import Optional, Dict, List
 from langchain.agents import create_agent
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
@@ -62,8 +63,86 @@ STRICT RULES:
 BOT_MARKER = "<!-- AI-ANALYSIS-BOT -->"
 
 
+def load_repos_config(config_path: str) -> Dict:
+    """
+    Load multi-repository configuration from JSON file.
+    
+    Args:
+        config_path: Path to repos.json configuration file
+    
+    Returns:
+        Dictionary with 'default_token' (optional) and 'repositories' list
+        
+    Raises:
+        FileNotFoundError: If config file doesn't exist
+        ValueError: If config is invalid or missing required fields
+    """
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Validate config structure
+        if "repositories" not in config:
+            raise ValueError("Configuration must contain 'repositories' array")
+        
+        if not isinstance(config["repositories"], list):
+            raise ValueError("'repositories' must be an array")
+        
+        if len(config["repositories"]) == 0:
+            raise ValueError("'repositories' array cannot be empty")
+        
+        # Validate each repository entry
+        for idx, repo in enumerate(config["repositories"]):
+            if not isinstance(repo, dict):
+                raise ValueError(f"Repository at index {idx} must be an object")
+            
+            if "owner" not in repo or "name" not in repo:
+                raise ValueError(f"Repository at index {idx} missing 'owner' or 'name'")
+            
+            if not repo["owner"] or not repo["name"]:
+                raise ValueError(f"Repository at index {idx} has empty 'owner' or 'name'")
+        
+        logger.info(f"Loaded configuration for {len(config['repositories'])} repositories")
+        return config
+        
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in configuration file: {e}")
+
+
+def get_repo_token(repo_config: Dict, default_token: Optional[str]) -> str:
+    """
+    Get GitHub token for a repository, with fallback to default token.
+    
+    Args:
+        repo_config: Repository configuration dict with optional 'token' field
+        default_token: Default token from config file or None
+    
+    Returns:
+        GitHub token to use for this repository
+        
+    Raises:
+        ValueError: If no token is available (neither per-repo nor default)
+    """
+    # Per-repo token takes precedence
+    if "token" in repo_config and repo_config["token"]:
+        return repo_config["token"]
+    
+    # Fall back to default token
+    if default_token:
+        return default_token
+    
+    # No token available
+    raise ValueError(
+        f"No token configured for repository {repo_config['owner']}/{repo_config['name']}. "
+        "Specify 'token' in repository config or 'default_token' in config file."
+    )
+
+
 @tool
-def list_open_issues(owner: str, repo: str) -> str:
+def list_open_issues(owner: str, repo: str, token: Optional[str] = None) -> str:
     """
     List all open issues for a GitHub repository.
     Returns a JSON string with issue number, title, author, assignee,
@@ -72,11 +151,13 @@ def list_open_issues(owner: str, repo: str) -> str:
     Args:
         owner: GitHub repository owner (username or organization)
         repo: Repository name
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string containing list of open issues with metadata
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -144,7 +225,7 @@ def list_open_issues(owner: str, repo: str) -> str:
 
 
 @tool
-def get_issue_details(owner: str, repo: str, issue_number: int) -> str:
+def get_issue_details(owner: str, repo: str, issue_number: int, token: Optional[str] = None) -> str:
     """
     Fetch full details of a single GitHub issue by number.
     Body is truncated to 4000 characters to prevent context overflow.
@@ -153,11 +234,13 @@ def get_issue_details(owner: str, repo: str, issue_number: int) -> str:
         owner: GitHub repository owner
         repo: Repository name
         issue_number: Issue number to fetch
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string with issue details including title, body, labels, etc.
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -205,7 +288,7 @@ def get_issue_details(owner: str, repo: str, issue_number: int) -> str:
 
 
 @tool
-def get_issue_comments(owner: str, repo: str, issue_number: int) -> str:
+def get_issue_comments(owner: str, repo: str, issue_number: int, token: Optional[str] = None) -> str:
     """
     Fetch comments for a GitHub issue.
     Returns top 10 comments with body truncated to 1000 characters each.
@@ -214,11 +297,13 @@ def get_issue_comments(owner: str, repo: str, issue_number: int) -> str:
         owner: GitHub repository owner
         repo: Repository name
         issue_number: Issue number to fetch comments for
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string with list of comments
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -259,7 +344,7 @@ def get_issue_comments(owner: str, repo: str, issue_number: int) -> str:
 
 
 @tool
-def check_existing_bot_comments(owner: str, repo: str, issue_number: int) -> str:
+def check_existing_bot_comments(owner: str, repo: str, issue_number: int, token: Optional[str] = None) -> str:
     """
     Check if an issue already has a bot-generated recommendation comment.
     Searches for the bot marker in comments to prevent duplicate recommendations.
@@ -268,11 +353,13 @@ def check_existing_bot_comments(owner: str, repo: str, issue_number: int) -> str
         owner: GitHub repository owner
         repo: Repository name
         issue_number: Issue number to check
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string with has_bot_comment boolean and comment_id if found
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -314,7 +401,7 @@ def check_existing_bot_comments(owner: str, repo: str, issue_number: int) -> str
 
 
 @tool
-def post_issue_comment(owner: str, repo: str, issue_number: int, comment_body: str) -> str:
+def post_issue_comment(owner: str, repo: str, issue_number: int, comment_body: str, token: Optional[str] = None) -> str:
     """
     Post a comment to a GitHub issue.
     Formats the comment with bot marker and collapsible details block.
@@ -324,11 +411,13 @@ def post_issue_comment(owner: str, repo: str, issue_number: int, comment_body: s
         repo: Repository name
         issue_number: Issue number to comment on
         comment_body: The recommendation text to post
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string with comment ID, URL, and timestamp
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -386,7 +475,7 @@ def post_issue_comment(owner: str, repo: str, issue_number: int, comment_body: s
 
 
 @tool
-def list_recent_issues(owner: str, repo: str, hours: int = 24) -> str:
+def list_recent_issues(owner: str, repo: str, hours: int = 24, token: Optional[str] = None) -> str:
     """
     List issues opened within the last N hours (default 24).
     Returns same structure as list_open_issues but filtered by creation time.
@@ -395,11 +484,13 @@ def list_recent_issues(owner: str, repo: str, hours: int = 24) -> str:
         owner: GitHub repository owner
         repo: Repository name
         hours: Number of hours to look back (default 24)
+        token: Optional GitHub API token (uses GITHUB_TOKEN env var if not provided)
     
     Returns:
         JSON string containing list of recent issues with metadata
     """
-    token = require_env("GITHUB_TOKEN")
+    if token is None:
+        token = require_env("GITHUB_TOKEN")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -532,6 +623,205 @@ def format_report(issues_data: dict) -> str:
     return "\n".join(lines)
 
 
+def process_single_repo_report(owner: str, repo: str, token: str):
+    """
+    Process report mode for a single repository.
+    
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        token: GitHub API token
+    """
+    logger.info(f"Running in REPORT mode for {owner}/{repo}")
+    try:
+        result = list_open_issues.invoke({"owner": owner, "repo": repo, "token": token})
+        issues_data = json.loads(result)
+        report = format_report(issues_data)
+        
+        print("\n" + "="*80)
+        print(report)
+        print("="*80 + "\n")
+        
+        logger.info("Report generation completed successfully")
+    except Exception as e:
+        logger.error(f"Report generation failed: {e}")
+        print(f"\n❌ Report generation failed: {e}")
+
+
+def process_single_repo_issue(owner: str, repo: str, issue_number: int, token: str):
+    """
+    Process issue recommendation mode for a single repository.
+    
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        issue_number: Issue number to analyze
+        token: GitHub API token
+    """
+    logger.info(f"Running in RECOMMENDATION mode for issue #{issue_number} in {owner}/{repo}")
+    
+    # Build agent
+    logger.info("Building GitHub Issue Reporter agent...")
+    agent = build_agent()
+    
+    prompt = (
+        f"Analyze issue #{issue_number} in the GitHub repository {owner}/{repo}:\n\n"
+        f"1. First, check if this issue already has a bot recommendation using check_existing_bot_comments with token='{token}'.\n"
+        f"2. If it does, report that and skip posting a new comment.\n"
+        f"3. If not, fetch the issue details and comments using get_issue_details and get_issue_comments with token='{token}'.\n"
+        f"4. Analyze the issue and produce a structured recommendation with sections: "
+        f"Issue Type (bug/feature/enhancement), Root Cause/Approach, Affected Area, "
+        f"Suggested Fix/Design, and Test Cases (bugs) or Acceptance Criteria (features).\n"
+        f"5. Post your recommendation to GitHub using post_issue_comment with token='{token}'.\n"
+        f"6. Report the result (success with comment URL or skip message)."
+    )
+
+    try:
+        logger.info("Invoking agent...")
+        result = agent.invoke(
+            {"messages": [HumanMessage(content=prompt)]},
+            config={"recursion_limit": 15},
+        )
+        
+        # Extract final answer
+        answer = result["messages"][-1].content
+        
+        # Print result
+        print("\n" + "="*80)
+        print(answer)
+        print("="*80 + "\n")
+        
+        logger.info("Issue analysis completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Issue analysis failed: {e}")
+        print(f"\n❌ Issue analysis failed: {e}")
+
+
+def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run: bool, max_issues: int):
+    """
+    Process auto-analyze mode for a single repository.
+    
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        token: GitHub API token
+        dry_run: Whether to preview without posting
+        max_issues: Maximum number of issues to process
+    """
+    logger.info(f"Running in AUTO-ANALYZE mode for {owner}/{repo} (last 24 hours)")
+    
+    if dry_run:
+        print("\n🔍 DRY RUN MODE: No comments will be posted to GitHub\n")
+    
+    # Build agent
+    logger.info("Building GitHub Issue Reporter agent...")
+    agent = build_agent()
+    
+    try:
+        # Fetch recent issues
+        logger.info("Fetching issues opened in the last 24 hours...")
+        result = list_recent_issues.invoke({"owner": owner, "repo": repo, "hours": 24, "token": token})
+        recent_data = json.loads(result)
+        
+        if "error" in recent_data:
+            print(f"\n❌ Error fetching recent issues: {recent_data['error']}")
+            return
+        
+        issues = recent_data.get("issues", [])
+        total_found = len(issues)
+        
+        if total_found == 0:
+            print("\n✅ No new issues opened in the last 24 hours.")
+            return
+        
+        print(f"\n📊 Found {total_found} issues opened in the last 24 hours")
+        
+        # Limit to max_issues
+        issues_to_process = issues[:max_issues]
+        if len(issues_to_process) < total_found:
+            print(f"⚠️  Processing first {max_issues} issues (limited by --max-issues)")
+        
+        analyzed = 0
+        posted = 0
+        skipped = 0
+        errors = 0
+        
+        for issue in issues_to_process:
+            issue_num = issue["number"]
+            print(f"\n--- Issue #{issue_num}: {issue['title']} ---")
+            
+            try:
+                # Check for existing bot comment
+                check_result = check_existing_bot_comments.invoke({
+                    "owner": owner,
+                    "repo": repo,
+                    "issue_number": issue_num,
+                    "token": token,
+                })
+                check_data = json.loads(check_result)
+                
+                if check_data.get("has_bot_comment"):
+                    print(f"ℹ️  Skipping: Issue #{issue_num} already has a bot recommendation")
+                    skipped += 1
+                    continue
+                
+                if dry_run:
+                    print(f"🔍 DRY RUN: Would analyze and post recommendation for issue #{issue_num}")
+                    analyzed += 1
+                    continue
+                
+                # Analyze and post recommendation
+                logger.info(f"Analyzing issue #{issue_num}...")
+                prompt = (
+                    f"Analyze issue #{issue_num} in {owner}/{repo} and post a recommendation:\n\n"
+                    f"1. Fetch issue details using get_issue_details with token='{token}'.\n"
+                    f"2. Fetch comments using get_issue_comments with token='{token}'.\n"
+                    f"3. Produce a structured recommendation with: Issue Type, Root Cause/Approach, "
+                    f"Affected Area, Suggested Fix/Design, Test Cases/Acceptance Criteria.\n"
+                    f"4. Post the recommendation using post_issue_comment with token='{token}'.\n"
+                    f"5. Return ONLY the comment URL from the post_issue_comment result."
+                )
+                
+                agent_result = agent.invoke(
+                    {"messages": [HumanMessage(content=prompt)]},
+                    config={"recursion_limit": 15},
+                )
+                
+                answer = agent_result["messages"][-1].content
+                print(f"✅ Posted recommendation for issue #{issue_num}")
+                if "html_url" in answer or "github.com" in answer:
+                    print(f"   {answer}")
+                
+                analyzed += 1
+                posted += 1
+                
+            except Exception as e:
+                logger.error(f"Error processing issue #{issue_num}: {e}")
+                print(f"❌ Error processing issue #{issue_num}: {e}")
+                errors += 1
+        
+        # Print summary
+        print("\n" + "="*80)
+        print("**Auto-Analysis Summary**\n")
+        print(f"Total issues found (last 24h): {total_found}")
+        print(f"Issues processed: {len(issues_to_process)}")
+        if dry_run:
+            print(f"Would analyze: {analyzed}")
+        else:
+            print(f"Recommendations posted: {posted}")
+        print(f"Skipped (already analyzed): {skipped}")
+        if errors > 0:
+            print(f"Errors: {errors}")
+        print("="*80 + "\n")
+        
+        logger.info("Auto-analyze completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Auto-analyze failed: {e}")
+        print(f"\n❌ Auto-analyze failed: {e}")
+
+
 def main():
     """
     Main entry point with CLI argument parsing and environment variable fallback.
@@ -600,17 +890,16 @@ def main():
             description="GitHub Issue Reporter & Solution Recommender Agent",
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""Examples:
-  # List all open issues
+  # Single repository mode (using environment variables)
   python src/main.py --report
-
-  # Get AI recommendation for a specific issue and post to GitHub
   python src/main.py --issue 42
-
-  # Auto-analyze issues opened in the last 24 hours
   python src/main.py --auto-analyze
-
-  # Preview auto-analyze without posting comments
   python src/main.py --auto-analyze --dry-run
+
+  # Multi-repository mode (using repos.json configuration)
+  python src/main.py --report --repos-config repos.json
+  python src/main.py --issue 42 --repos-config repos.json
+  python src/main.py --auto-analyze --repos-config repos.json
         """
         )
         
@@ -644,6 +933,12 @@ def main():
             metavar="N",
             help="Maximum number of issues to process in auto-analyze mode (default: 100)"
         )
+        parser.add_argument(
+            "--repos-config",
+            type=str,
+            metavar="PATH",
+            help="Path to repos.json configuration file for multi-repository processing"
+        )
         
         args = parser.parse_args()
 
@@ -655,7 +950,49 @@ def main():
         if args.max_issues <= 0:
             parser.error("--max-issues must be a positive integer")
 
-    # Load configuration from environment
+    # Multi-repository mode: Process multiple repositories from config file
+    if not awx_mode and hasattr(args, 'repos_config') and args.repos_config:
+        try:
+            logger.info(f"Loading multi-repository configuration from {args.repos_config}")
+            repos_config = load_repos_config(args.repos_config)
+            default_token = repos_config.get("default_token")
+            repositories = repos_config["repositories"]
+            
+            logger.info(f"Processing {len(repositories)} repositories")
+            
+            # Process each repository
+            for idx, repo_config in enumerate(repositories):
+                owner = repo_config["owner"]
+                repo = repo_config["name"]
+                
+                try:
+                    token = get_repo_token(repo_config, default_token)
+                except ValueError as e:
+                    logger.error(f"Repository {owner}/{repo}: {e}")
+                    print(f"\n❌ {e}")
+                    continue
+                
+                print(f"\n{'='*80}")
+                print(f"Repository {idx+1}/{len(repositories)}: {owner}/{repo}")
+                print('='*80)
+                
+                # Process this repository based on mode
+                if args.report:
+                    process_single_repo_report(owner, repo, token)
+                elif args.issue:
+                    process_single_repo_issue(owner, repo, args.issue, token)
+                elif args.auto_analyze:
+                    process_single_repo_auto_analyze(owner, repo, token, args.dry_run, args.max_issues)
+            
+            logger.info("Multi-repository processing completed")
+            return
+            
+        except (FileNotFoundError, ValueError) as e:
+            logger.error(f"Configuration error: {e}")
+            print(f"\n❌ Configuration error: {e}")
+            return
+
+    # Single repository mode: Load configuration from environment
     try:
         owner = require_env("GITHUB_REPO_OWNER")
         repo = require_env("GITHUB_REPO_NAME")
@@ -672,172 +1009,30 @@ def main():
 
     # Handle report mode (direct Python formatting, no LLM)
     if args.report:
-        logger.info(f"Running in REPORT mode for {owner}/{repo}")
-        try:
-            result = list_open_issues.invoke({"owner": owner, "repo": repo})
-            issues_data = json.loads(result)
-            report = format_report(issues_data)
-            
-            print("\n" + "="*80)
-            print(report)
-            print("="*80 + "\n")
-            
-            logger.info("Report generation completed successfully")
+        token = os.getenv("GITHUB_TOKEN")  # Get token from env for single-repo mode
+        if not token:
+            logger.error("GITHUB_TOKEN environment variable not set")
+            print("\n❌ GITHUB_TOKEN environment variable not set")
             return
-        except Exception as e:
-            logger.error(f"Report generation failed: {e}")
-            print(f"\n❌ Report generation failed: {e}")
-            return
+        process_single_repo_report(owner, repo, token)
+        return
 
-    # Build agent for modes that require LLM
-    logger.info("Building GitHub Issue Reporter agent...")
-    agent = build_agent()
-
+    # For issue and auto-analyze modes, get token from env
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        logger.error("GITHUB_TOKEN environment variable not set")
+        print("\n❌ GITHUB_TOKEN environment variable not set")
+        return
+    
     # Handle issue recommendation mode
     if args.issue:
-        logger.info(f"Running in RECOMMENDATION mode for issue #{args.issue} in {owner}/{repo}")
-        prompt = (
-            f"Analyze issue #{args.issue} in the GitHub repository {owner}/{repo}:\n\n"
-            f"1. First, check if this issue already has a bot recommendation using check_existing_bot_comments.\n"
-            f"2. If it does, report that and skip posting a new comment.\n"
-            f"3. If not, fetch the issue details and comments using get_issue_details and get_issue_comments.\n"
-            f"4. Analyze the issue and produce a structured recommendation with sections: "
-            f"Issue Type (bug/feature/enhancement), Root Cause/Approach, Affected Area, "
-            f"Suggested Fix/Design, and Test Cases (bugs) or Acceptance Criteria (features).\n"
-            f"5. Post your recommendation to GitHub using post_issue_comment.\n"
-            f"6. Report the result (success with comment URL or skip message)."
-        )
-
-        try:
-            logger.info("Invoking agent...")
-            result = agent.invoke(
-                {"messages": [HumanMessage(content=prompt)]},
-                config={"recursion_limit": 15},
-            )
-            
-            # Extract final answer
-            answer = result["messages"][-1].content
-            
-            # Print result
-            print("\n" + "="*80)
-            print(answer)
-            print("="*80 + "\n")
-            
-            logger.info("Issue analysis completed successfully")
-            
-        except Exception as e:
-            logger.error(f"Issue analysis failed: {e}")
-            print(f"\n❌ Issue analysis failed: {e}")
+        process_single_repo_issue(owner, repo, args.issue, token)
         return
 
     # Handle auto-analyze mode
     if args.auto_analyze:
-        logger.info(f"Running in AUTO-ANALYZE mode for {owner}/{repo} (last 24 hours)")
-        
-        if args.dry_run:
-            print("\n🔍 DRY RUN MODE: No comments will be posted to GitHub\n")
-        
-        try:
-            # Fetch recent issues
-            logger.info("Fetching issues opened in the last 24 hours...")
-            result = list_recent_issues.invoke({"owner": owner, "repo": repo, "hours": 24})
-            recent_data = json.loads(result)
-            
-            if "error" in recent_data:
-                print(f"\n❌ Error fetching recent issues: {recent_data['error']}")
-                return
-            
-            issues = recent_data.get("issues", [])
-            total_found = len(issues)
-            
-            if total_found == 0:
-                print("\n✅ No new issues opened in the last 24 hours.")
-                return
-            
-            print(f"\n📊 Found {total_found} issues opened in the last 24 hours")
-            
-            # Limit to max_issues
-            issues_to_process = issues[:args.max_issues]
-            if len(issues_to_process) < total_found:
-                print(f"⚠️  Processing first {args.max_issues} issues (limited by --max-issues)")
-            
-            analyzed = 0
-            posted = 0
-            skipped = 0
-            errors = 0
-            
-            for issue in issues_to_process:
-                issue_num = issue["number"]
-                print(f"\n--- Issue #{issue_num}: {issue['title']} ---")
-                
-                try:
-                    # Check for existing bot comment
-                    check_result = check_existing_bot_comments.invoke({
-                        "owner": owner,
-                        "repo": repo,
-                        "issue_number": issue_num,
-                    })
-                    check_data = json.loads(check_result)
-                    
-                    if check_data.get("has_bot_comment"):
-                        print(f"ℹ️  Skipping: Issue #{issue_num} already has a bot recommendation")
-                        skipped += 1
-                        continue
-                    
-                    if args.dry_run:
-                        print(f"🔍 DRY RUN: Would analyze and post recommendation for issue #{issue_num}")
-                        analyzed += 1
-                        continue
-                    
-                    # Analyze and post recommendation
-                    logger.info(f"Analyzing issue #{issue_num}...")
-                    prompt = (
-                        f"Analyze issue #{issue_num} in {owner}/{repo} and post a recommendation:\n\n"
-                        f"1. Fetch issue details using get_issue_details.\n"
-                        f"2. Fetch comments using get_issue_comments.\n"
-                        f"3. Produce a structured recommendation with: Issue Type, Root Cause/Approach, "
-                        f"Affected Area, Suggested Fix/Design, Test Cases/Acceptance Criteria.\n"
-                        f"4. Post the recommendation using post_issue_comment.\n"
-                        f"5. Return ONLY the comment URL from the post_issue_comment result."
-                    )
-                    
-                    agent_result = agent.invoke(
-                        {"messages": [HumanMessage(content=prompt)]},
-                        config={"recursion_limit": 15},
-                    )
-                    
-                    answer = agent_result["messages"][-1].content
-                    print(f"✅ Posted recommendation for issue #{issue_num}")
-                    if "html_url" in answer or "github.com" in answer:
-                        print(f"   {answer}")
-                    
-                    analyzed += 1
-                    posted += 1
-                    
-                except Exception as e:
-                    logger.error(f"Error processing issue #{issue_num}: {e}")
-                    print(f"❌ Error processing issue #{issue_num}: {e}")
-                    errors += 1
-            
-            # Print summary
-            print("\n" + "="*80)
-            print("**Auto-Analysis Summary**\n")
-            print(f"Total issues found (last 24h): {total_found}")
-            print(f"Issues processed: {len(issues_to_process)}")
-            if args.dry_run:
-                print(f"Would analyze: {analyzed}")
-            else:
-                print(f"Recommendations posted: {posted}")
-            print(f"Skipped (already analyzed): {skipped}")
-            if errors > 0:
-                print(f"Errors: {errors}")
-            print("="*80 + "\n")
-            
-            logger.info("Auto-analyze completed successfully")
-            
-        except Exception as e:
-            logger.error(f"Auto-analyze failed: {e}")
-            print(f"\n❌ Auto-analyze failed: {e}")
+        process_single_repo_auto_analyze(owner, repo, token, args.dry_run, args.max_issues)
+        return
 
 
 if __name__ == "__main__":
