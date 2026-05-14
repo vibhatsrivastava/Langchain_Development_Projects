@@ -37,6 +37,13 @@ import importlib.util
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# Configure UTF-8 encoding for stdout/stderr to support Unicode emoji on Windows
+# AWX/Ansible on Windows uses cp1252 by default, which doesn't support Unicode characters
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from .awx_utils import extract_agent_params, format_awx_output, validate_project_structure
 from .utils import get_logger
 
