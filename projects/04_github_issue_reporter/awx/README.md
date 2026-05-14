@@ -4,6 +4,30 @@ This guide walks through setting up Ansible AWX to schedule and trigger the **Gi
 
 ---
 
+## 🚀 **Quick Start: Choose Your Deployment**
+
+This project supports **two deployment scenarios**:
+
+### **Scenario A: Windows Remote Execution** (Most Common)
+- **AWX Controller**: Linux (AWX server)
+- **Target Host**: Windows machine with Python + project venv
+- **Connection**: psrp/WinRM remote execution
+- **Playbook**: `playbook_windows.yml`
+- **Setup Guide**: 👉 **[AWX_WINDOWS_SETUP.md](AWX_WINDOWS_SETUP.md)** (Start here!)
+
+### **Scenario B: Linux Localhost Execution**
+- **AWX Controller**: Linux (AWX server)
+- **Target Host**: localhost (same machine as AWX)
+- **Connection**: local
+- **Playbook**: `playbook.yml`
+- **Setup Guide**: This README (continue below)
+
+**💡 Not sure which one?** If your error log shows:
+- `ServerHost-01` or remote Windows host → Use Scenario A
+- `localhost` and AWX runs on Linux → Use Scenario B
+
+---
+
 ## Prerequisites
 
 - Ansible AWX instance (version 21.0+) with admin or project management access
@@ -13,6 +37,7 @@ This guide walks through setting up Ansible AWX to schedule and trigger the **Gi
   - GitHub API (api.github.com)
   - Langfuse server (optional, for observability)
 - GitHub Personal Access Token with `repo` scope (for write operations)
+- **For Windows targets**: WinRM/psrp enabled on target host (see [AWX_WINDOWS_SETUP.md](AWX_WINDOWS_SETUP.md))
 
 ---
 
@@ -95,13 +120,16 @@ A job template combines the playbook, credentials, and survey:
 3. Configure:
    - **Name**: `GitHub Issue Reporter - Run Agent`
    - **Job Type**: `Run`
-   - **Inventory**: Select an inventory with `localhost`
+   - **Inventory**: Select an inventory with `localhost` (Linux) or your Windows host
    - **Project**: `Agentic AI Agents`
-   - **Playbook**: `projects/04_github_issue_reporter/awx/playbook.yml`
+   - **Playbook**: Choose based on your deployment:
+     - **Linux localhost**: `projects/04_github_issue_reporter/awx/playbook.yml`
+     - **Windows remote**: `projects/04_github_issue_reporter/awx/playbook_windows.yml` ⚠️ **Use this if targeting Windows**
    - **Credentials**:
      - Add `Ollama API Credentials` credential
      - Add `GitHub API Credentials` credential
      - Add `Langfuse Observability Credentials` credential (optional)
+     - Add `Machine` credential (for Windows remote execution only)
    - **Verbosity**: `1 (Verbose)` or higher for debugging
    - **Options**: ✓ Enable Concurrent Jobs (if desired)
 4. Save the template
@@ -110,17 +138,96 @@ A job template combines the playbook, credentials, and survey:
 
 ### 5. Attach Survey Specification
 
-Surveys allow operators to provide runtime parameters via UI forms:
+Surveys allow operators to provide runtime parameters via UI forms. Choose one of the methods below:
+
+#### Method A: Form-Based Survey Builder (Recommended for Modern AWX)
 
 1. Open the job template created in Step 4
 2. Click the **Survey** tab
-3. Click **Add**
-4. Copy the entire content of `awx/survey.json`
-5. Paste into the JSON editor
-6. Click **Save**
-7. Toggle **Survey Enabled** to ON
+3. Click **Add** to add each question individually
+4. Create the following 5 questions:
 
-**Survey Fields**:
+**Question 1: Execution Mode**
+- Question: `Execution Mode`
+- Description: `Select the agent execution mode`
+- Answer variable name: `mode`
+- Answer type: `Multiple Choice (single select)`
+- Multiple Choice Options (one per line): `report`, `issue`, `auto-analyze`
+- Default answer: `report`
+- Required: ✓ Checked
+
+**Question 2: Issue Number**
+- Question: `Issue Number`
+- Description: `Issue number to analyze (required for 'issue' mode)`
+- Answer variable name: `issue_number`
+- Answer type: `Integer`
+- Minimum: `1` | Maximum: `999999`
+- Required: ☐ Unchecked
+
+**Question 3: Dry Run**
+- Question: `Dry Run`
+- Description: `Preview analysis without posting comments (auto-analyze mode only)`
+- Answer variable name: `dry_run`
+- Answer type: `Multiple Choice (single select)`
+- Multiple Choice Options: `true`, `false`
+- Default answer: `false`
+- Required: ☐ Unchecked
+
+**Question 4: Max Issues**
+- Question: `Max Issues`
+- Description: `Maximum number of issues to process`
+- Answer variable name: `max_issues`
+- Answer type: `Integer`
+- Minimum: `1` | Maximum: `1000`
+- Default answer: `100`
+- Required: ☐ Unchecked
+
+**Question 5: Log Level**
+- Question: `Log Level`
+- Description: `Logging verbosity for agent execution`
+- Answer variable name: `log_level`
+- Answer type: `Multiple Choice (single select)`
+- Multiple Choice Options: `DEBUG`, `INFO`, `WARNING`, `ERROR`
+- Default answer: `INFO`
+- Required: ☐ Unchecked
+
+5. Click **Save** after adding each question
+6. Toggle **Survey Enabled** to ON
+
+#### Method B: JSON Import via Python Script (Alternative)
+
+If you prefer automation, use the provided Python script that calls AWX REST API directly:
+
+```powershell
+# Set AWX credentials
+$env:AWX_HOST = "https://your-awx-server.com"
+$env:AWX_TOKEN = "your_oauth_token_here"  # Create in AWX: User Icon → Tokens
+
+# Run import script
+python awx/import_survey_api.py
+```
+
+**Note**: AWX CLI (`awxkit`) is incompatible with Python 3.13+ due to deprecated `pkg_resources`. The Python script uses `requests` library for direct API access.
+
+#### Method C: JSON Import via AWX CLI (Legacy - Python 3.12 and below only)
+
+If you're using Python 3.12 or earlier:
+
+```bash
+# Install AWX CLI
+pip install awxkit setuptools
+
+# Configure connection
+export TOWER_HOST="https://your-awx-server.com"
+export TOWER_OAUTH_TOKEN="your_token"
+
+# Import survey
+awx job_templates modify <template_id> \
+  --survey_spec @projects/04_github_issue_reporter/awx/survey.json \
+  --survey_enabled true
+```
+
+**Survey Fields Reference**:
 - **Execution Mode**: Choose `report`, `issue`, or `auto-analyze`
 - **Issue Number**: Specify issue number (required for `issue` mode)
 - **Dry Run**: Preview without posting comments (`auto-analyze` mode only)
@@ -357,7 +464,45 @@ curl -X POST https://awx.example.com/api/v2/job_templates/123/launch/ \
 
 ---
 
-### Issue 5: Langfuse Tracing Not Working
+### Issue 5: psrp Connection Error ("cannot run the interpreter '/usr/bin/python' on the psrp connection plugin")
+
+**Cause**: Playbook is targeting a Windows host via psrp/WinRM, but Python interpreter discovery fails because Windows doesn't have Python at `/usr/bin/python`.
+
+**Symptoms**:
+```
+[WARNING]: ansible_psrp_transport is unsupported by the current psrp version installed
+fatal: [ServerHost-01]: FAILED! => {"msg": "cannot run the interpreter '/usr/bin/python' on the psrp connection plugin"}
+```
+
+**Solution**:
+1. **Verify playbook changes applied**: The latest `playbook.yml` now includes `ansible_python_interpreter: auto_silent` to disable Python discovery on Windows hosts
+2. **Update inventory/host variables**: In AWX inventory, set host variables for Windows targets:
+   ```yaml
+   ansible_connection: psrp  # or winrm
+   ansible_psrp_protocol: http  # or https
+   ansible_psrp_auth: basic  # or ntlm, kerberos, negotiate
+   ansible_python_interpreter: auto_silent
+   ```
+3. **Upgrade pypsrp library**: On AWX execution nodes, ensure `pypsrp>=0.8.0`:
+   ```bash
+   pip install --upgrade pypsrp
+   ```
+4. **Alternative - Use localhost**: If AWX and agent run on same Windows host, change inventory to use `localhost` with `ansible_connection: local` instead of psrp
+5. **Check playbook host pattern**: Verify `playbook.yml` uses `hosts: all` (not hardcoded `localhost`) to support inventory flexibility
+
+**Verification**:
+```bash
+# Test Ansible connectivity to Windows host
+ansible ServerHost-01 -i inventory -m win_ping \
+  -e ansible_connection=psrp \
+  -e ansible_python_interpreter=auto_silent
+```
+
+**Note**: The playbook was updated to support both localhost and remote Windows execution. If still encountering issues, verify AWX project sync pulled the latest changes.
+
+---
+
+### Issue 6: Langfuse Tracing Not Working
 
 **Cause**: Langfuse credentials not attached or server unreachable.
 

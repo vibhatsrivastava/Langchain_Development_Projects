@@ -357,8 +357,8 @@ notepad .env
 | Variable | Required | Description | Example |
 |---|---|---|---|
 | `GITHUB_TOKEN` | ✅ Yes | GitHub Personal Access Token | `ghp_abc123...` |
-| `GITHUB_REPO_OWNER` | ✅ Yes | Repository owner (user or org) | `vibhatsrivastava` |
-| `GITHUB_REPO_NAME` | ✅ Yes | Repository name | `Agentic_AI_Development_Framework` |
+| `GITHUB_REPO_OWNER` | ✅ Yes | Repository owner (user or org) | `your_github_username` |
+| `GITHUB_REPO_NAME` | ✅ Yes | Repository name | `your_repository_name` |
 | `OLLAMA_BASE_URL` | ✅ Yes | Ollama server URL | `http://localhost:11434` |
 | `OLLAMA_API_KEY` | ⚠️ Conditional | Required for remote Ollama | `Bearer token` |
 | `OLLAMA_MODEL` | ✅ Yes | LLM model name | `llama3.2:3b` |
@@ -398,7 +398,7 @@ python src\main.py --report
 
 ```markdown
 ================================================================================
-## Open Issues Report — vibhatsrivastava/Agentic_AI_Development_Framework
+## Open Issues Report — your_org/your_repository
 **Total open issues: 4** | Generated: 2026-05-06
 
 | # | Title | Author | Assignee | Labels | Opened | Age (days) | Last Updated | URL |
