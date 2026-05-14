@@ -23,7 +23,6 @@ from src.main import (
 
 def test_module_imports():
     """Test that the module imports successfully."""
-    # This test ensures the module-level code is executed, including sys.path manipulation
     import src.main
     assert hasattr(src.main, 'load_repos_config')
     assert hasattr(src.main, 'get_repo_token')
@@ -259,7 +258,7 @@ class TestHelperFunctions:
         
         captured = capsys.readouterr()
         assert "Open Issues Report" in captured.out
-        assert "testowner/testrepo" in captured.out or "2" in captured.out  # Check for output
+        assert "2" in captured.out  # Check for total count in output
 
     def test_process_single_repo_report_error(self, mock_github_api, mock_env, capsys):
         """Test process_single_repo_report handles errors gracefully."""
@@ -274,4 +273,5 @@ class TestHelperFunctions:
         process_single_repo_report("invalid", "invalid", "test_token")
         
         captured = capsys.readouterr()
-        assert "Report generation failed" in captured.out or "❌" in captured.out
+        # The error message is shown in the report output, not as "Report generation failed"
+        assert "Error fetching issues" in captured.out

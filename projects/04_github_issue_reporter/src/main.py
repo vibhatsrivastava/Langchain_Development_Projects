@@ -660,23 +660,27 @@ def process_single_repo_issue(owner: str, repo: str, issue_number: int, token: s
     """
     logger.info(f"Running in RECOMMENDATION mode for issue #{issue_number} in {owner}/{repo}")
     
-    # Build agent
-    logger.info("Building GitHub Issue Reporter agent...")
-    agent = build_agent()
+    # Temporarily set GITHUB_TOKEN environment variable for this repository
+    original_token = os.environ.get("GITHUB_TOKEN")
+    os.environ["GITHUB_TOKEN"] = token
     
-    prompt = (
-        f"Analyze issue #{issue_number} in the GitHub repository {owner}/{repo}:\n\n"
-        f"1. First, check if this issue already has a bot recommendation using check_existing_bot_comments with token='{token}'.\n"
-        f"2. If it does, report that and skip posting a new comment.\n"
-        f"3. If not, fetch the issue details and comments using get_issue_details and get_issue_comments with token='{token}'.\n"
-        f"4. Analyze the issue and produce a structured recommendation with sections: "
-        f"Issue Type (bug/feature/enhancement), Root Cause/Approach, Affected Area, "
-        f"Suggested Fix/Design, and Test Cases (bugs) or Acceptance Criteria (features).\n"
-        f"5. Post your recommendation to GitHub using post_issue_comment with token='{token}'.\n"
-        f"6. Report the result (success with comment URL or skip message)."
-    )
-
     try:
+        # Build agent (will use GITHUB_TOKEN from environment)
+        logger.info("Building GitHub Issue Reporter agent...")
+        agent = build_agent()
+        
+        prompt = (
+            f"Analyze issue #{issue_number} in the GitHub repository {owner}/{repo}:\n\n"
+            f"1. First, check if this issue already has a bot recommendation using check_existing_bot_comments.\n"
+            f"2. If it does, report that and skip posting a new comment.\n"
+            f"3. If not, fetch the issue details and comments using get_issue_details and get_issue_comments.\n"
+            f"4. Analyze the issue and produce a structured recommendation with sections: "
+            f"Issue Type (bug/feature/enhancement), Root Cause/Approach, Affected Area, "
+            f"Suggested Fix/Design, and Test Cases (bugs) or Acceptance Criteria (features).\n"
+            f"5. Post your recommendation to GitHub using post_issue_comment.\n"
+            f"6. Report the result (success with comment URL or skip message)."
+        )
+
         logger.info("Invoking agent...")
         result = agent.invoke(
             {"messages": [HumanMessage(content=prompt)]},
@@ -696,6 +700,12 @@ def process_single_repo_issue(owner: str, repo: str, issue_number: int, token: s
     except Exception as e:
         logger.error(f"Issue analysis failed: {e}")
         print(f"\n❌ Issue analysis failed: {e}")
+    finally:
+        # Restore original token
+        if original_token is not None:
+            os.environ["GITHUB_TOKEN"] = original_token
+        elif "GITHUB_TOKEN" in os.environ:
+            del os.environ["GITHUB_TOKEN"]
 
 
 def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run: bool, max_issues: int):
@@ -714,14 +724,18 @@ def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run:
     if dry_run:
         print("\n🔍 DRY RUN MODE: No comments will be posted to GitHub\n")
     
-    # Build agent
-    logger.info("Building GitHub Issue Reporter agent...")
-    agent = build_agent()
+    # Temporarily set GITHUB_TOKEN environment variable for this repository
+    original_token = os.environ.get("GITHUB_TOKEN")
+    os.environ["GITHUB_TOKEN"] = token
     
     try:
+        # Build agent (will use GITHUB_TOKEN from environment)
+        logger.info("Building GitHub Issue Reporter agent...")
+        agent = build_agent()
+        
         # Fetch recent issues
         logger.info("Fetching issues opened in the last 24 hours...")
-        result = list_recent_issues.invoke({"owner": owner, "repo": repo, "hours": 24, "token": token})
+        result = list_recent_issues.invoke({"owner": owner, "repo": repo, "hours": 24})
         recent_data = json.loads(result)
         
         if "error" in recent_data:
@@ -757,7 +771,6 @@ def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run:
                     "owner": owner,
                     "repo": repo,
                     "issue_number": issue_num,
-                    "token": token,
                 })
                 check_data = json.loads(check_result)
                 
@@ -775,11 +788,11 @@ def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run:
                 logger.info(f"Analyzing issue #{issue_num}...")
                 prompt = (
                     f"Analyze issue #{issue_num} in {owner}/{repo} and post a recommendation:\n\n"
-                    f"1. Fetch issue details using get_issue_details with token='{token}'.\n"
-                    f"2. Fetch comments using get_issue_comments with token='{token}'.\n"
+                    f"1. Fetch issue details using get_issue_details.\n"
+                    f"2. Fetch comments using get_issue_comments.\n"
                     f"3. Produce a structured recommendation with: Issue Type, Root Cause/Approach, "
                     f"Affected Area, Suggested Fix/Design, Test Cases/Acceptance Criteria.\n"
-                    f"4. Post the recommendation using post_issue_comment with token='{token}'.\n"
+                    f"4. Post the recommendation using post_issue_comment.\n"
                     f"5. Return ONLY the comment URL from the post_issue_comment result."
                 )
                 
@@ -790,7 +803,8 @@ def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run:
                 
                 answer = agent_result["messages"][-1].content
                 print(f"✅ Posted recommendation for issue #{issue_num}")
-                if "html_url" in answer or "github.com" in answer:
+                # Check if the response contains a GitHub issue URL
+                if "github.com" in answer and "/issues/" in answer and answer.startswith("https://github.com/"):
                     print(f"   {answer}")
                 
                 analyzed += 1
@@ -820,6 +834,12 @@ def process_single_repo_auto_analyze(owner: str, repo: str, token: str, dry_run:
     except Exception as e:
         logger.error(f"Auto-analyze failed: {e}")
         print(f"\n❌ Auto-analyze failed: {e}")
+    finally:
+        # Restore original token
+        if original_token is not None:
+            os.environ["GITHUB_TOKEN"] = original_token
+        elif "GITHUB_TOKEN" in os.environ:
+            del os.environ["GITHUB_TOKEN"]
 
 
 def main():
