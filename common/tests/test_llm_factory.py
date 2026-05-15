@@ -360,3 +360,139 @@ class TestVaultIntegration:
             assert llm_headers["Authorization"] == "Bearer shared-api-key"
             assert chat_headers["Authorization"] == "Bearer shared-api-key"
             assert embed_headers["Authorization"] == "Bearer shared-api-key"
+
+
+@pytest.mark.unit
+class TestLangfuseCallbackAttachment:
+    """Tests for automatic Langfuse callback attachment to LLM instances."""
+    
+    @patch("common.llm_factory.OllamaLLM")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_llm_attaches_callback_when_enabled(self, mock_get_handler, mock_llm_class):
+        """get_llm() attaches Langfuse callback when handler is available."""
+        mock_handler = Mock()
+        mock_get_handler.return_value = mock_handler
+        
+        get_llm()
+        
+        # Verify callback was attached
+        call_kwargs = mock_llm_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == [mock_handler]
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.OllamaLLM")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_llm_no_callback_when_disabled(self, mock_get_handler, mock_llm_class):
+        """get_llm() does not attach callback when handler returns None."""
+        mock_get_handler.return_value = None
+        
+        get_llm()
+        
+        # Verify empty callbacks list
+        call_kwargs = mock_llm_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == []
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.ChatOllama")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_chat_llm_attaches_callback_when_enabled(self, mock_get_handler, mock_chat_class):
+        """get_chat_llm() attaches Langfuse callback when handler is available."""
+        mock_handler = Mock()
+        mock_get_handler.return_value = mock_handler
+        
+        get_chat_llm()
+        
+        # Verify callback was attached
+        call_kwargs = mock_chat_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == [mock_handler]
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.ChatOllama")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_chat_llm_no_callback_when_disabled(self, mock_get_handler, mock_chat_class):
+        """get_chat_llm() does not attach callback when handler returns None."""
+        mock_get_handler.return_value = None
+        
+        get_chat_llm()
+        
+        # Verify empty callbacks list
+        call_kwargs = mock_chat_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == []
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.OllamaEmbeddings")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_embeddings_attaches_callback_when_enabled(self, mock_get_handler, mock_embeddings_class):
+        """get_embeddings() attaches Langfuse callback when handler is available."""
+        mock_handler = Mock()
+        mock_get_handler.return_value = mock_handler
+        
+        get_embeddings()
+        
+        # Verify callback was attached
+        call_kwargs = mock_embeddings_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == [mock_handler]
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.OllamaEmbeddings")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_get_embeddings_no_callback_when_disabled(self, mock_get_handler, mock_embeddings_class):
+        """get_embeddings() does not attach callback when handler returns None."""
+        mock_get_handler.return_value = None
+        
+        get_embeddings()
+        
+        # Verify empty callbacks list
+        call_kwargs = mock_embeddings_class.call_args[1]
+        assert "callbacks" in call_kwargs
+        assert call_kwargs["callbacks"] == []
+        mock_get_handler.assert_called_once()
+    
+    @patch("common.llm_factory.OllamaLLM")
+    @patch("common.llm_factory.ChatOllama")
+    @patch("common.llm_factory.OllamaEmbeddings")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_same_callback_handler_used_across_all_factories(
+        self, mock_get_handler, mock_embeddings, mock_chat, mock_llm
+    ):
+        """All factory functions use the same cached Langfuse callback handler."""
+        mock_handler = Mock()
+        mock_get_handler.return_value = mock_handler
+        
+        get_llm()
+        get_chat_llm()
+        get_embeddings()
+        
+        # Verify handler was retrieved 3 times (once per factory call)
+        assert mock_get_handler.call_count == 3
+        
+        # Verify all factories got the same handler instance
+        llm_callbacks = mock_llm.call_args[1]["callbacks"]
+        chat_callbacks = mock_chat.call_args[1]["callbacks"]
+        embed_callbacks = mock_embeddings.call_args[1]["callbacks"]
+        
+        assert llm_callbacks == [mock_handler]
+        assert chat_callbacks == [mock_handler]
+        assert embed_callbacks == [mock_handler]
+    
+    @patch("common.llm_factory.ChatOllama")
+    @patch("common.llm_factory.get_langfuse_callback_handler")
+    def test_callback_preserved_with_other_parameters(self, mock_get_handler, mock_chat_class):
+        """Callback attachment works alongside other parameters (format, num_ctx)."""
+        mock_handler = Mock()
+        mock_get_handler.return_value = mock_handler
+        
+        get_chat_llm(model="test-model", format="json", num_ctx=8192, temperature=0.5)
+        
+        # Verify all parameters are present including callback
+        call_kwargs = mock_chat_class.call_args[1]
+        assert call_kwargs["model"] == "test-model"
+        assert call_kwargs["format"] == "json"
+        assert call_kwargs["num_ctx"] == 8192
+        assert call_kwargs["temperature"] == 0.5
+        assert call_kwargs["callbacks"] == [mock_handler]

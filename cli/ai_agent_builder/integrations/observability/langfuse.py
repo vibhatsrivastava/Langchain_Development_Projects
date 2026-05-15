@@ -1,7 +1,23 @@
 """
 langfuse.py — Langfuse observability integration module.
 
-Open-source LLM tracing, cost tracking, and user feedback.
+**NOTE**: Langfuse tracing is now automatically available via `common/llm_factory`.
+This integration module provides **advanced usage patterns only** — basic tracing
+requires no scaffolding or integration selection.
+
+**What's already included (no setup needed)**:
+- Automatic tracing for all LLM calls (`get_llm()`, `get_chat_llm()`, `get_embeddings()`)
+- Configuration via root `.env` (LANGFUSE_ENABLED, LANGFUSE_*_KEY, LANGFUSE_HOST)
+- Vault integration support for API keys
+- Always-on by default (disable with LANGFUSE_ENABLED=false)
+
+**What this integration adds**:
+- Custom trace metadata (session_id, user_id, tags)
+- User feedback collection
+- Dataset management examples
+- Advanced callback configuration
+
+For basic tracing, simply configure root `.env` — no integration needed.
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -30,24 +46,19 @@ class LangfuseIntegration(IntegrationModule):
 
     @property
     def description(self) -> str:
-        return "Open-source LLM tracing and observability platform"
+        return "Advanced Langfuse usage (basic tracing already available via common/)"
 
     @property
     def category(self) -> str:
         return "observability"
 
     def get_dependencies(self) -> List[str]:
-        return [
-            "langfuse>=2.0.0",
-            "langchain-langfuse>=2.0.0",
-        ]
+        # Dependencies now in common/pyproject.toml - no per-project deps needed
+        return []
 
     def get_env_vars(self) -> Dict[str, str]:
-        return {
-            "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
-            "LANGFUSE_SECRET_KEY": "sk-lf-...",
-            "LANGFUSE_HOST": "https://cloud.langfuse.com",  # or self-hosted URL
-        }
+        # Variables now in root .env - no project-level env vars needed
+        return {}
 
     def get_template_files(self) -> List[Tuple[str, str]]:
         return [
@@ -78,9 +89,10 @@ def mock_langfuse_callback(mocker):
 
     def get_prerequisites(self) -> List[str]:
         return [
-            "Langfuse account created (cloud.langfuse.com or self-hosted)",
-            "Project created in Langfuse dashboard",
-            "API keys generated (public and secret keys)",
+            "Langfuse is already integrated at common/ level (auto-tracing enabled)",
+            "Configure root .env with LANGFUSE_ENABLED, LANGFUSE_*_KEY, LANGFUSE_HOST",
+            "This integration provides advanced usage only (custom metadata, datasets, etc.)",
+            "See docs/langfuse.md for full setup instructions",
         ]
 
     def validate_prerequisites(self) -> Tuple[bool, Optional[str]]:

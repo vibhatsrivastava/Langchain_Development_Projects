@@ -5,8 +5,17 @@ ReAct agent that answers natural language weather questions for any city.
 Uses the Open-Meteo API (free, no API key required).
 """
 
-import argparse
 import sys
+from pathlib import Path
+
+# Workaround: Add repository root to sys.path (Python 3.14 .pth compatibility issue)
+# This ensures the common package can be imported regardless of .pth file loading
+# Path: src/main.py -> src -> 03_weather_reporting_agent -> projects -> repo_root
+_repo_root = Path(__file__).parent.parent.parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
+import argparse
 import requests
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage

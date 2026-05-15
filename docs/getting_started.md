@@ -245,6 +245,83 @@ Topics covered:
 
 ---
 
+## Optional: Langfuse Observability (Always-On by Default)
+
+Automatic LLM tracing, cost tracking, and performance analytics for all your projects — **no code changes needed**.
+
+### What is Langfuse?
+
+**Langfuse** is an open-source LLM observability platform that automatically traces every LLM call, providing:
+
+- **Request/Response Tracing**: See exact prompts, responses, and tool calls for every agent run
+- **Cost Tracking**: Token usage and cost calculations per model and project
+- **Performance Metrics**: Latency, throughput, and error rates
+- **Dashboard**: Real-time monitoring of all LLM interactions
+
+**Key feature**: Tracing is **always-on by default** — configure once, all projects automatically traced.
+
+### Quick Setup
+
+1. **Access your Langfuse instance:**
+   - Your self-hosted instance: `http://10.0.0.15:3000`
+   - Or sign up at [cloud.langfuse.com](https://cloud.langfuse.com)
+
+2. **Create a project and generate API keys:**
+   - Log in → New Project → Name it (e.g., "AI Agents")
+   - Go to Settings → API Keys → Create New API Key
+   - Copy the **Public Key** (`pk-lf-...`) and **Secret Key** (`sk-lf-...`)
+
+3. **Add to root `.env`:**
+   ```env
+   # Langfuse Observability (Always-On)
+   LANGFUSE_ENABLED=true
+   LANGFUSE_PUBLIC_KEY=pk-lf-your_public_key_here
+   LANGFUSE_SECRET_KEY=sk-lf-your_secret_key_here
+   LANGFUSE_HOST=http://10.0.0.15:3000
+   ```
+
+4. **Run any project** — traces appear automatically:
+   ```powershell
+   cd projects/01_hello_langchain
+   python src/main.py
+   ```
+
+5. **Check Langfuse dashboard:**
+   - Open `http://10.0.0.15:3000`
+   - Go to **Traces** tab
+   - See your first trace with full LLM interaction details!
+
+### Verify Tracing
+
+**Check logs** for confirmation:
+```
+INFO | Successfully initialized Langfuse callback handler (host: http://10.0.0.15:3000)
+```
+
+**No traces appearing?** See troubleshooting in [docs/langfuse.md](langfuse.md).
+
+### Disabling Tracing
+
+To disable tracing globally (e.g., for offline development):
+```env
+LANGFUSE_ENABLED=false
+```
+
+### Full Documentation
+
+For complete setup, dashboard walkthrough, troubleshooting, and advanced usage:
+
+**[docs/langfuse.md](langfuse.md)** — Comprehensive Langfuse integration guide
+
+Topics covered:
+- Dashboard walkthrough and trace analysis
+- Vault integration for API keys
+- Performance impact (minimal)
+- Troubleshooting common issues
+- Advanced usage (custom metadata, sampling, user feedback)
+
+---
+
 ## Environment Variable Management
 
 **All environment variables are configured in the root `.env` file.** The `load_dotenv()` function automatically searches upward from the `common/` directory and finds the root `.env` file, making it available to all projects.

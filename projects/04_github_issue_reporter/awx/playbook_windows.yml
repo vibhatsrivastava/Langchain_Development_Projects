@@ -1,0 +1,261 @@
+---
+# Ansible playbook for 04_github_issue_reporter agent
+# Windows remote execution via psrp/WinRM
+# Project: 04_github_issue_reporter (langgraph architecture)
+
+- name: Execute AI Agent on Windows
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    # Disable Python interpreter discovery for Windows/psrp connections
+    ansible_python_interpreter: auto_silent
+    
+    # Windows paths - CUSTOMIZE THESE for your environment
+    # Override via AWX job template extra-vars if different
+    project_dir: "C:/Users/<your-username>/Documents/GitHub/Agentic_AI_Development_Framework/projects/04_github_issue_reporter"
+    venv_path: "{{ project_dir }}/.venv"
+    venv_activate_script: "{{ venv_path }}/Scripts/Activate.ps1"
+    python_executable: "{{ venv_path }}/Scripts/python.exe"
+    repo_root: "C:/Users/<your-username>/Documents/GitHub/Agentic_AI_Development_Framework"
+    
+  tasks:
+    - name: Verify project virtual environment exists
+      ansible.windows.win_stat:
+        path: "{{ venv_path }}"
+      register: venv_stat
+      
+    - name: Fail if venv not found
+      ansible.builtin.fail:
+        msg: "Virtual environment not found at {{ venv_path }}. Run setup first."
+      when: not venv_stat.stat.exists
+    
+    - name: Verify Python executable exists in venv
+      ansible.windows.win_stat:
+        path: "{{ python_executable }}"
+      register: python_stat
+      
+    - name: Fail if Python executable not found
+      ansible.builtin.fail:
+        msg: "Python executable not found at {{ python_executable }}"
+      when: not python_stat.stat.exists
+    
+    - name: Display execution banner
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                    🤖 AI AGENT EXECUTION STARTING 🤖                         ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ Agent:              04_github_issue_reporter                                 ║
+          ║ Architecture:       LangGraph ReAct                                          ║
+          ║ Target:             {{ inventory_hostname }}                                                      ║
+          ║ Project Path:       {{ project_dir }}
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    - name: Load and parse .env files into dictionary
+      ansible.windows.win_shell: |
+        # Initialize hashtable for environment variables
+        $envVars = @{}
+        
+        # Load root .env file
+        $rootEnvFile = "{{ repo_root }}\.env"
+        if (Test-Path $rootEnvFile) {
+          Get-Content $rootEnvFile | ForEach-Object {
+            if ($_ -match '^\s*([^#][^=]+)\s*=\s*(.+)\s*$') {
+              $name = $matches[1].Trim()
+              $value = $matches[2].Trim().Trim("'").Trim('"')
+              $envVars[$name] = $value
+            }
+          }
+        }
+        
+        # Load project .env file (overrides root if same key)
+        $projectEnvFile = "{{ project_dir }}\.env"
+        if (Test-Path $projectEnvFile) {
+          Get-Content $projectEnvFile | ForEach-Object {
+            if ($_ -match '^\s*([^#][^=]+)\s*=\s*(.+)\s*$') {
+              $name = $matches[1].Trim()
+              $value = $matches[2].Trim().Trim("'").Trim('"')
+              $envVars[$name] = $value
+            }
+          }
+        }
+        
+        # Add AWX survey parameters
+        $envVars['MODE'] = '{{ mode | default("report") }}'
+        $envVars['ISSUE_NUMBER'] = '{{ issue_number | default("") }}'
+        $envVars['DRY_RUN'] = '{{ dry_run | default("false") }}'
+        $envVars['MAX_ISSUES'] = '{{ max_issues | default("100") }}'
+        $envVars['LOG_LEVEL'] = '{{ log_level | default("INFO") }}'
+        $envVars['AWX_JOB_ID'] = '{{ tower_job_id | default("") }}'
+        
+        # Output as JSON
+        $envVars | ConvertTo-Json -Compress
+      register: env_vars_output
+      changed_when: false
+    
+    - name: Set agent execution environment variables
+      ansible.builtin.set_fact:
+        agent_env: "{{ env_vars_output.stdout | from_json }}"
+    
+    - name: Display loaded environment (sanitized - no secrets)
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                      ENVIRONMENT CONFIGURATION                               ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ Configuration Source: .env files on target host                             ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ FROM ROOT .ENV FILE:                                                         ║
+          ║   • OLLAMA_BASE_URL:       {{ agent_env.OLLAMA_BASE_URL | default('not set') }}
+          ║   • OLLAMA_MODEL:          {{ agent_env.OLLAMA_MODEL | default('not set') }}
+          ║   • LANGFUSE_ENABLED:      {{ agent_env.LANGFUSE_ENABLED | default('not set') }}
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ FROM PROJECT .ENV FILE:                                                      ║
+          ║   • GITHUB_REPO_OWNER:     {{ agent_env.GITHUB_REPO_OWNER | default('not set') }}
+          ║   • GITHUB_REPO_NAME:      {{ agent_env.GITHUB_REPO_NAME | default('not set') }}
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ FROM AWX SURVEY:                                                             ║
+          ║   • MODE:                  {{ agent_env.MODE }}
+          ║   • MAX_ISSUES:            {{ agent_env.MAX_ISSUES }}
+          ║   • DRY_RUN:               {{ agent_env.DRY_RUN }}
+          ║   • LOG_LEVEL:             {{ agent_env.LOG_LEVEL }}
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    - name: Execute GitHub Issue Reporter agent via AWX wrapper (Windows PowerShell)
+      ansible.windows.win_shell: |
+        # Activate virtual environment
+        & "{{ venv_activate_script }}"
+        
+        # Change to repository root
+        Set-Location "{{ repo_root }}"
+        
+        # Run agent via AWX wrapper and capture output
+        $output = & "{{ python_executable }}" -m common.awx_wrapper 04_github_issue_reporter 2>&1
+        
+        # Extract JSON from output (last line that looks like JSON)
+        $jsonLine = $output | Where-Object { $_ -match '^\s*\{.*"status".*\}' } | Select-Object -Last 1
+        
+        if ($jsonLine) {
+          Write-Output $jsonLine
+        } else {
+          # No valid JSON found, output all for debugging
+          Write-Output "ERROR: No valid JSON output found"
+          $output | ForEach-Object { Write-Output $_ }
+        }
+        
+        # Return exit code
+        exit $LASTEXITCODE
+      environment: "{{ agent_env }}"
+      register: agent_output
+      changed_when: false
+      failed_when: false
+    
+    - name: Extract JSON from agent output
+      ansible.builtin.set_fact:
+        agent_json_output: "{{ agent_output.stdout_lines | select('match', '^\\s*\\{.*\"status\".*\\}') | list | last | default('') }}"
+    
+    - name: Parse agent output as JSON
+      ansible.builtin.set_fact:
+        agent_result: "{{ agent_json_output | from_json }}"
+      when: 
+        - agent_json_output | length > 0
+        - agent_json_output | trim | regex_search('^\{.*\}$')
+      failed_when: false
+    
+    - name: Display agent execution result
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                     AI AGENT EXECUTION COMPLETE                              ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ Agent:              04_github_issue_reporter                                 ║
+          ║ Status:             {{ "✓ SUCCESS" if agent_result.status == "success" else "✗ FAILED" | upper }}                                                  ║
+          ║ Execution Time:     {{ agent_result.metadata.execution_time }}s                                                    ║
+          ║ AWX Job ID:         {{ agent_result.metadata.awx_job_id | default('N/A') }}                                                 ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║                            AGENT OUTPUT                                      ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+          
+          {{ agent_result.result | default('No result returned') }}
+          
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                              END OF OUTPUT                                   ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+      when: agent_result is defined and agent_result.status == "success"
+    
+    - name: Display success summary
+      ansible.builtin.debug:
+        msg: |
+          
+          ✓ Agent execution completed successfully!
+          
+          {% if agent_env.MODE == "report" %}
+          📊 Report generated with {{ agent_env.MAX_ISSUES }} maximum issues
+          {% elif agent_env.MODE == "issue" %}
+          🔍 Issue #{{ agent_env.ISSUE_NUMBER }} analyzed and recommendation posted
+          {% elif agent_env.MODE == "auto-analyze" %}
+          🤖 Auto-analysis completed (Dry Run: {{ agent_env.DRY_RUN }})
+          {% endif %}
+          
+          📈 View traces: {{ agent_env.LANGFUSE_HOST }}/project/{{ agent_env.GITHUB_REPO_NAME }}
+          🐙 GitHub Repo: https://github.com/{{ agent_env.GITHUB_REPO_OWNER }}/{{ agent_env.GITHUB_REPO_NAME }}
+      when: agent_result is defined and agent_result.status == "success"
+    
+    - name: Display agent execution error
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                       ⚠️  AGENT EXECUTION FAILED  ⚠️                         ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ Agent:              04_github_issue_reporter                                 ║
+          ║ Status:             ✗ ERROR                                                  ║
+          ║ Execution Time:     {{ agent_result.metadata.execution_time }}s                                                    ║
+          ║ AWX Job ID:         {{ agent_result.metadata.awx_job_id | default('N/A') }}                                                 ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║                            ERROR DETAILS                                     ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+          
+          {{ agent_result.error | default('Unknown error occurred') }}
+          
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                              END OF OUTPUT                                   ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+      when: agent_result is defined and agent_result.status == "error"
+    
+    - name: Display raw output if JSON parsing failed
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                    ⚠️  JSON PARSING FAILED  ⚠️                              ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║ Agent:              04_github_issue_reporter                                 ║
+          ║ Return Code:        {{ agent_output.rc }}                                                        ║
+          ╠══════════════════════════════════════════════════════════════════════════════╣
+          ║                         STANDARD OUTPUT (STDOUT)                             ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+          
+          {{ agent_output.stdout }}
+          
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                         STANDARD ERROR (STDERR)                              ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+          
+          {{ agent_output.stderr }}
+          
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                              END OF OUTPUT                                   ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+      when: agent_result is not defined and agent_output is defined
+    
+    - name: Fail if agent execution had non-zero exit code
+      ansible.builtin.fail:
+        msg: "Agent execution failed with exit code {{ agent_output.rc }}"
+      when: 
+        - agent_output.rc != 0
+        - agent_result is not defined
+    
+    - name: Fail if agent execution failed
+      ansible.builtin.fail:
+        msg: "Agent execution failed: {{ agent_result.error }}"
+      when: agent_result is defined and agent_result.status == "error"

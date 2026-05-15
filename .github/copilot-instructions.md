@@ -126,6 +126,32 @@ When `VAULT_ENABLED=true`, `OLLAMA_API_KEY` is retrieved from Vault with automat
 - **Zero code changes**: Projects use `get_llm()` as before — credential source is transparent
 - **Backward compatible**: Vault disabled by default; existing workflows unchanged
 
+**Optional: Langfuse Observability (Always-On by Default)**
+
+Automatic LLM tracing, cost tracking, and performance analytics via **Langfuse**. All LLM calls are traced automatically via `common/llm_factory` — **no code changes needed**.
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `LANGFUSE_ENABLED` | Enable/disable tracing (default: `true`) | `true` |
+| `LANGFUSE_PUBLIC_KEY` | Public API key from Langfuse dashboard | `pk-lf-...` |
+| `LANGFUSE_SECRET_KEY` | Secret API key from Langfuse dashboard | `sk-lf-...` |
+| `LANGFUSE_HOST` | Langfuse server URL (cloud or self-hosted) | `http://10.0.0.15:3000` |
+
+**How it works:**
+- Tracing is **always-on by default** — set `LANGFUSE_ENABLED=false` to disable globally
+- Callbacks are automatically attached to all LLM instances (`get_llm()`, `get_chat_llm()`, `get_embeddings()`)
+- Supports Vault integration: keys fetched from Vault path "langfuse" with `.env` fallback
+- Graceful degradation: LLMs work normally if Langfuse unavailable or keys missing
+- Zero code changes: existing projects automatically get tracing after configuring `.env`
+
+**Quick setup:**
+1. Create project at your Langfuse instance (e.g., http://10.0.0.15:3000)
+2. Generate API keys (Settings → API Keys)
+3. Add keys to root `.env` or Vault
+4. Run any project → traces appear in Langfuse dashboard automatically
+
+See [docs/langfuse.md](../docs/langfuse.md) for detailed setup instructions, dashboard walkthrough, and troubleshooting.
+
 ---
 
 ## The `common/` Package — Always Use It
@@ -347,8 +373,15 @@ python src/main.py
 - **`common/` import errors** — The project venv must have `ai-agent-common` installed. Run `uv pip install -e ./common` from the repo root targeting the project venv, or re-scaffold using `ai-agent-builder new-project`
 - **Do NOT add `sys.path.insert`** — `common/` is a proper installable package; path hacks are no longer needed or used
 - **`.env` not found** — `llm_factory.py` calls `load_project_env()` which searches upward; ensure `.env` exists at repo root
+- **PR tests failing with ImportError** — The CI workflow installs all project `requirements.txt` files via a loop. If you added a new import, ensure it's listed in your project's `requirements.txt`. For dependencies used by 3+ projects, add to root `requirements-base.txt`. See [Testing Strategy](../docs/TESTING_STRATEGY.md#dependency-management-in-ci) for details.
 - **Project `.env` usage** — Integration-specific projects (GitHub, Redis, etc.) MAY have a project `.env` file for integration variables only. Common variables (OLLAMA_*, VAULT_*) always live in root `.env`. Simple projects use only root `.env`. Projects automatically load both via `load_project_env()` from `common.utils`.
 - **Wrong LLM class** — Use `get_chat_llm()` (not `get_llm()`) for agents and LangGraph nodes; `OllamaLLM` does not support tool calling
 - **Model not available** — Run `ollama list` to see downloaded models; run `ollama pull <model>` if missing
 - **`OLLAMA_API_KEY` left blank for remote** — Remote Ollama servers require the Bearer token; check `.env`
 - **`venv/` vs `.venv/`** — Each project uses `.venv/` inside its own directory; the root `.venv/` is only for repo-wide test runs
+- **Langfuse not tracing** — Check logs for "Successfully initialized Langfuse callback handler" message. Common issues:
+  - `LANGFUSE_ENABLED=false` in `.env` (tracing disabled)
+  - Missing `LANGFUSE_PUBLIC_KEY` or `LANGFUSE_SECRET_KEY` in `.env` or Vault
+  - `LANGFUSE_HOST` unreachable (check URL and network connectivity)
+  - `langfuse` library not installed (run `uv pip install -e ./common` to install dependencies)
+- **Langfuse traces not appearing** — Verify API keys are correct (check Langfuse dashboard Settings → API Keys), ensure project exists in Langfuse, check Langfuse server is running

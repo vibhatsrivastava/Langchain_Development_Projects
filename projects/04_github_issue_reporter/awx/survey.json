@@ -1,0 +1,78 @@
+{
+  "name": "GitHub Issue Reporter Agent Parameters",
+  "description": "Configure execution mode and parameters for the GitHub Issue Reporter agent",
+  "spec": [
+    {
+      "question_name": "Execution Mode",
+      "question_description": "Select the agent execution mode",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "mode",
+      "min": null,
+      "max": null,
+      "default": "report",
+      "choices": [
+        "report",
+        "issue",
+        "auto-analyze"
+      ],
+      "new_question": true
+    },
+    {
+      "question_name": "Issue Number",
+      "question_description": "Issue number to analyze (required for 'issue' mode, ignored for other modes)",
+      "required": false,
+      "type": "integer",
+      "variable": "issue_number",
+      "min": 1,
+      "max": 999999,
+      "default": 1,
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Dry Run",
+      "question_description": "Preview analysis without posting comments (only for 'auto-analyze' mode)",
+      "required": false,
+      "type": "multiplechoice",
+      "variable": "dry_run",
+      "min": null,
+      "max": null,
+      "default": "false",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "new_question": true
+    },
+    {
+      "question_name": "Max Issues",
+      "question_description": "Maximum number of issues to process in auto-analyze mode (default: 100)",
+      "required": false,
+      "type": "integer",
+      "variable": "max_issues",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Log Level",
+      "question_description": "Logging verbosity for agent execution",
+      "required": false,
+      "type": "multiplechoice",
+      "variable": "log_level",
+      "min": null,
+      "max": null,
+      "default": "INFO",
+      "choices": [
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR"
+      ],
+      "new_question": true
+    }
+  ]
+}

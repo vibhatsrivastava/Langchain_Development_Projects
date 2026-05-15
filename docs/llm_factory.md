@@ -223,8 +223,117 @@ For details on HashiCorp Vault integration, see [vault.md](vault.md).
 
 ---
 
+## Automatic Langfuse Tracing
+
+**All LLM instances created by the factory are automatically traced by Langfuse** — no code changes or callback configuration needed.
+
+### How It Works
+
+When you call `get_llm()`, `get_chat_llm()`, or `get_embeddings()`, the Langfuse callback handler is automatically attached:
+
+```python
+# Your code (no changes needed)
+from common.llm_factory import get_chat_llm
+
+llm = get_chat_llm()  # ← Langfuse callback attached automatically
+
+# Behind the scenes in llm_factory.py:
+handler = get_langfuse_callback_handler()  # Returns handler or None
+return ChatOllama(..., callbacks=[handler] if handler else [])
+```
+
+### What Gets Traced
+
+**For Simple Chains** (`get_llm()`):
+- Input prompt
+- LLM response
+- Token usage (input/output tokens)
+- Latency and model name
+
+**For Agents** (`get_chat_llm()`):
+- Initial user message
+- Agent reasoning steps
+- Tool calls (arguments + results)
+- LLM responses at each step
+- Final answer and total token usage
+
+**For Embeddings** (`get_embeddings()`):
+- Documents embedded
+- Query embeddings
+- Model name and latency
+
+### Configuration
+
+Tracing is **enabled by default** — configure in root `.env`:
+
+```env
+# Always-on (default)
+LANGFUSE_ENABLED=true
+LANGFUSE_PUBLIC_KEY=pk-lf-your_public_key
+LANGFUSE_SECRET_KEY=sk-lf-your_secret_key
+LANGFUSE_HOST=http://10.0.0.15:3000
+```
+
+To disable tracing globally:
+```env
+LANGFUSE_ENABLED=false
+```
+
+### Verify Tracing is Active
+
+**Check logs** when your application starts:
+```
+INFO | Successfully initialized Langfuse callback handler (host: http://10.0.0.15:3000)
+```
+
+**Check Langfuse dashboard** → Traces tab → See all LLM calls in real-time
+
+### Graceful Degradation
+
+**If Langfuse is disabled or unavailable:**
+- LLMs work normally (no tracing)
+- No errors or exceptions
+- Log message: "Langfuse tracing is disabled" or "Failed to initialize handler"
+
+**Design principle**: Tracing failures never break LLM functionality.
+
+### FAQ
+
+**Q: Can I disable tracing for a specific LLM instance?**
+
+A: Not yet (future enhancement). Currently, tracing is controlled globally via `LANGFUSE_ENABLED` in `.env`.
+
+Workaround for now:
+```python
+# Direct instantiation bypasses factory callbacks
+from langchain_ollama import ChatOllama
+
+llm_no_trace = ChatOllama(
+    model="gpt-oss:20b",
+    base_url=os.getenv("OLLAMA_BASE_URL"),
+    # No callbacks parameter
+)
+```
+
+**Q: Does tracing slow down LLM calls?**
+
+A: No. Tracing adds ~5-10ms overhead (negligible). Trace uploads happen asynchronously in the background.
+
+**Q: How do I view traces for a specific project?**
+
+A: Currently all projects share one Langfuse project. Future enhancement: per-project API keys in project `.env` files.
+
+### Full Documentation
+
+For setup instructions, dashboard walkthrough, and troubleshooting:
+
+**[docs/langfuse.md](langfuse.md)** — Comprehensive Langfuse integration guide
+
+---
+
 ## See Also
 
 - [Models Guide](models.md) — Full model reference and performance comparison
 - [HashiCorp Vault](vault.md) — Centralized secret management
+- [Langfuse Observability](langfuse.md) — LLM tracing and analytics
 - [Getting Started](getting_started.md) — Environment setup

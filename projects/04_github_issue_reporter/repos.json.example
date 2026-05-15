@@ -1,0 +1,27 @@
+{
+  "_comment": "Multi-repository configuration file for GitHub Issue Reporter Agent",
+  "_comment2": "Two configuration modes supported:",
+  "_comment3": "1. Shared token: Use 'default_token' for all repositories",
+  "_comment4": "2. Per-repo tokens: Specify 'token' for each repository (overrides default_token)",
+  
+  "default_token": "ghp_your_shared_github_token_here",
+  
+  "repositories": [
+    {
+      "owner": "your_github_username",
+      "name": "repository_name_1",
+      "_comment": "Uses default_token (shared token mode)"
+    },
+    {
+      "owner": "your_github_username",
+      "name": "repository_name_2",
+      "_comment": "Uses default_token (shared token mode)"
+    },
+    {
+      "owner": "another_org",
+      "name": "repository_name_3",
+      "token": "ghp_specific_token_for_this_repo",
+      "_comment": "Uses per-repo token (overrides default_token)"
+    }
+  ]
+}

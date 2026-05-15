@@ -20,6 +20,7 @@ import os
 from langchain_ollama import OllamaLLM, ChatOllama, OllamaEmbeddings
 from common.vault import get_secret
 from common.utils import load_project_env
+from common.langfuse_tracing import get_langfuse_callback_handler
 
 load_project_env()
 
@@ -56,11 +57,16 @@ def get_llm(model: str = None, temperature: float = 0.0) -> OllamaLLM:
         llm = get_llm(model="llama3.1:8b")                 # override model
         llm = get_llm(model="mistral:7b", temperature=0.7) # creative responses
     """
+    # Attach Langfuse callback for automatic tracing (if enabled)
+    handler = get_langfuse_callback_handler()
+    callbacks = [handler] if handler else []
+    
     return OllamaLLM(
         model=model or _DEFAULT_MODEL,
         base_url=_BASE_URL,
         temperature=temperature,
         client_kwargs={"headers": _auth_headers()},
+        callbacks=callbacks,
     )
 
 
@@ -93,11 +99,16 @@ def get_chat_llm(
         chat = get_chat_llm(format="json")                      # JSON output mode
         chat = get_chat_llm(model="llama3.1:8b", num_ctx=8192)  # larger context
     """
+    # Attach Langfuse callback for automatic tracing (if enabled)
+    handler = get_langfuse_callback_handler()
+    callbacks = [handler] if handler else []
+    
     kwargs = dict(
         model=model or _DEFAULT_MODEL,
         base_url=_BASE_URL,
         temperature=temperature,
         client_kwargs={"headers": _auth_headers()},
+        callbacks=callbacks,
     )
     if format:
         kwargs["format"] = format
@@ -122,8 +133,13 @@ def get_embeddings(model: str = None) -> OllamaEmbeddings:
         embeddings = get_embeddings()
         embeddings = get_embeddings(model="mxbai-embed-large")
     """
+    # Attach Langfuse callback for automatic tracing (if enabled)
+    handler = get_langfuse_callback_handler()
+    callbacks = [handler] if handler else []
+    
     return OllamaEmbeddings(
         model=model or _DEFAULT_EMBEDDING_MODEL,
         base_url=_BASE_URL,
         client_kwargs={"headers": _auth_headers()},
+        callbacks=callbacks,
     )

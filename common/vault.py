@@ -83,12 +83,14 @@ def _get_vault_client() -> Optional[Any]:
         return None
 
 
-def _fetch_from_vault(vault_key: str) -> Optional[str]:
+def _fetch_from_vault(vault_key: str, vault_path: Optional[str] = None) -> Optional[str]:
     """
     Fetch a secret from HashiCorp Vault.
     
     Args:
         vault_key: The key name within the Vault secret (e.g., "OLLAMA_API_KEY")
+        vault_path: Optional custom Vault secret path (e.g., "langfuse").
+                    If None, uses VAULT_SECRET_PATH env var (default: "ollama")
     
     Returns:
         Secret value from Vault, or None if not found or error occurred.
@@ -97,8 +99,8 @@ def _fetch_from_vault(vault_key: str) -> Optional[str]:
     if client is None:
         return None
     
-    # Get secret path from environment
-    secret_path = os.getenv("VAULT_SECRET_PATH", "ollama")
+    # Get secret path from parameter or environment
+    secret_path = vault_path or os.getenv("VAULT_SECRET_PATH", "ollama")
     mount_point = os.getenv("VAULT_MOUNT_POINT", "secret")
     
     try:
@@ -132,7 +134,12 @@ def _fetch_from_vault(vault_key: str) -> Optional[str]:
         return None
 
 
-def get_secret(vault_key: str, env_fallback_key: str, default: str = "") -> str:
+def get_secret(
+    vault_key: str,
+    env_fallback_key: str,
+    default: str = "",
+    vault_path: Optional[str] = None
+) -> str:
     """
     Retrieve a secret from HashiCorp Vault with .env fallback.
     
@@ -146,25 +153,34 @@ def get_secret(vault_key: str, env_fallback_key: str, default: str = "") -> str:
         vault_key: The key name in Vault secret (e.g., "OLLAMA_API_KEY")
         env_fallback_key: The environment variable name to use as fallback (e.g., "OLLAMA_API_KEY")
         default: Default value if secret not found in Vault or .env (default: "")
+        vault_path: Optional custom Vault secret path (e.g., "langfuse").
+                    If None, uses VAULT_SECRET_PATH env var (default: "ollama")
     
     Returns:
         Secret value from Vault, .env, or default (in that priority order).
     
     Examples:
-        >>> # Try Vault first, fallback to .env
+        >>> # Try Vault first, fallback to .env (uses default "ollama" path)
         >>> api_key = get_secret("OLLAMA_API_KEY", "OLLAMA_API_KEY")
+        >>> 
+        >>> # With custom Vault path for different integration
+        >>> langfuse_key = get_secret(
+        ...     "LANGFUSE_PUBLIC_KEY",
+        ...     "LANGFUSE_PUBLIC_KEY",
+        ...     vault_path="langfuse"
+        ... )
         >>> 
         >>> # With custom default
         >>> api_key = get_secret("OLLAMA_API_KEY", "OLLAMA_API_KEY", default="localhost-key")
     """
-    # Check cache first
-    cache_key = f"{vault_key}:{env_fallback_key}"
+    # Check cache first (include vault_path in cache key for path-specific caching)
+    cache_key = f"{vault_key}:{env_fallback_key}:{vault_path or 'default'}"
     if cache_key in _SECRET_CACHE:
         logger.debug(f"Using cached value for '{vault_key}'")
         return _SECRET_CACHE[cache_key]
     
     # Try to fetch from Vault
-    vault_value = _fetch_from_vault(vault_key)
+    vault_value = _fetch_from_vault(vault_key, vault_path=vault_path)
     if vault_value is not None:
         _SECRET_CACHE[cache_key] = vault_value
         return vault_value

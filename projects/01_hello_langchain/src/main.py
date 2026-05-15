@@ -3,6 +3,16 @@ main.py — Hello LangChain
 Minimal working example: load an LLM via Ollama and run a simple Q&A chain.
 """
 
+import sys
+from pathlib import Path
+
+# Workaround: Add repository root to sys.path (Python 3.14 .pth compatibility issue)
+# This ensures the common package can be imported regardless of .pth file loading
+# Path: src/main.py -> src -> 01_hello_langchain -> projects -> repo_root
+_repo_root = Path(__file__).parent.parent.parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser

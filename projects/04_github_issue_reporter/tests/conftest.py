@@ -45,6 +45,11 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("OLLAMA_MODEL", "llama3.2:3b")
+    # Explicitly unset AWX mode variables to ensure clean test state
+    monkeypatch.delenv("MODE", raising=False)
+    monkeypatch.delenv("ISSUE_NUMBER", raising=False)
+    monkeypatch.delenv("DRY_RUN", raising=False)
+    monkeypatch.delenv("MAX_ISSUES", raising=False)
 
 
 @pytest.fixture
@@ -108,5 +113,59 @@ def sample_issue_comments():
             "body": "We should add input validation before split().",
         },
     ]
+
+
+@pytest.fixture
+def sample_bot_comment():
+    """Sample bot comment with marker."""
+    return {
+        "id": 987654321,
+        "user": {"login": "github-bot"},
+        "created_at": "2026-05-01T12:00:00Z",
+        "html_url": "https://github.com/testowner/testrepo/issues/42#issuecomment-987654321",
+        "body": "<!-- AI-ANALYSIS-BOT -->\n## 🤖 AI Analysis\n\n<details>\n<summary>View Recommendation</summary>\n\nIssue Type: Bug\n\n</details>",
+    }
+
+
+@pytest.fixture
+def sample_recent_issues():
+    """Sample GitHub API response for recent issues (last 24 hours)."""
+    from datetime import datetime, timedelta, timezone
+    
+    # Generate timestamps that are always within the last 24 hours
+    now = datetime.now(timezone.utc)
+    six_hours_ago = now - timedelta(hours=6)
+    twelve_hours_ago = now - timedelta(hours=12)
+    
+    return [
+        {
+            "number": 100,
+            "title": "New feature request",
+            "user": {"login": "alice"},
+            "assignee": None,
+            "labels": [{"name": "feature"}],
+            "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+            "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+            "html_url": "https://github.com/testowner/testrepo/issues/100",
+            "body": "Add support for new feature",
+        },
+        {
+            "number": 99,
+            "title": "Bug report",
+            "user": {"login": "bob"},
+            "assignee": {"login": "alice"},
+            "labels": [{"name": "bug"}],
+            "created_at": twelve_hours_ago.isoformat().replace("+00:00", "Z"),
+            "updated_at": twelve_hours_ago.isoformat().replace("+00:00", "Z"),
+            "html_url": "https://github.com/testowner/testrepo/issues/99",
+            "body": "Something is broken",
+        },
+    ]
+
+
+@pytest.fixture
+def mock_post_comment(mocker):
+    """Mock requests.post for posting comments to GitHub."""
+    return mocker.patch("src.main.requests.post")
 
 
