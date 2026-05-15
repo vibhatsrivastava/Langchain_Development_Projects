@@ -466,6 +466,11 @@ class TestListRecentIssuesTool:
 
     def test_list_recent_issues_excludes_prs(self, mock_github_api, mock_env):
         """Test that pull requests are excluded."""
+        from datetime import datetime, timedelta, timezone
+        
+        now = datetime.now(timezone.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        
         issues_with_pr = [
             {
                 "number": 50,
@@ -473,8 +478,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "alice"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-10T20:00:00Z",
-                "updated_at": "2026-05-10T20:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "Issue",
             },
@@ -484,8 +489,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "bob"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-10T19:00:00Z",
-                "updated_at": "2026-05-10T19:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "pull_request": {"url": "pr_url"},
                 "body": "PR",
@@ -505,6 +510,12 @@ class TestListRecentIssuesTool:
 
     def test_list_recent_issues_old_cutoff(self, mock_github_api, mock_env):
         """Test that issues older than cutoff are excluded."""
+        from datetime import datetime, timedelta, timezone
+        
+        now = datetime.now(timezone.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        thirty_hours_ago = now - timedelta(hours=30)
+        
         # Mix of recent and old issues
         issues = [
             {
@@ -513,8 +524,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "alice"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-11T00:00:00Z",  # Within 24h
-                "updated_at": "2026-05-11T00:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "New",
             },
@@ -524,8 +535,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "bob"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-01T00:00:00Z",  # > 24h ago
-                "updated_at": "2026-05-01T00:00:00Z",
+                "created_at": thirty_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": thirty_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "Old",
             },
