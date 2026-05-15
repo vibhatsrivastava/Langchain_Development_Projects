@@ -45,6 +45,11 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("OLLAMA_MODEL", "llama3.2:3b")
+    # Explicitly unset AWX mode variables to ensure clean test state
+    monkeypatch.delenv("MODE", raising=False)
+    monkeypatch.delenv("ISSUE_NUMBER", raising=False)
+    monkeypatch.delenv("DRY_RUN", raising=False)
+    monkeypatch.delenv("MAX_ISSUES", raising=False)
 
 
 @pytest.fixture

@@ -466,6 +466,11 @@ class TestListRecentIssuesTool:
 
     def test_list_recent_issues_excludes_prs(self, mock_github_api, mock_env):
         """Test that pull requests are excluded."""
+        from datetime import datetime, timedelta, timezone
+        
+        now = datetime.now(timezone.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        
         issues_with_pr = [
             {
                 "number": 50,
@@ -473,8 +478,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "alice"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-10T20:00:00Z",
-                "updated_at": "2026-05-10T20:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "Issue",
             },
@@ -484,8 +489,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "bob"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-10T19:00:00Z",
-                "updated_at": "2026-05-10T19:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "pull_request": {"url": "pr_url"},
                 "body": "PR",
@@ -505,6 +510,12 @@ class TestListRecentIssuesTool:
 
     def test_list_recent_issues_old_cutoff(self, mock_github_api, mock_env):
         """Test that issues older than cutoff are excluded."""
+        from datetime import datetime, timedelta, timezone
+        
+        now = datetime.now(timezone.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        thirty_hours_ago = now - timedelta(hours=30)
+        
         # Mix of recent and old issues
         issues = [
             {
@@ -513,8 +524,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "alice"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-11T00:00:00Z",  # Within 24h
-                "updated_at": "2026-05-11T00:00:00Z",
+                "created_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": six_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "New",
             },
@@ -524,8 +535,8 @@ class TestListRecentIssuesTool:
                 "user": {"login": "bob"},
                 "assignee": None,
                 "labels": [],
-                "created_at": "2026-05-01T00:00:00Z",  # > 24h ago
-                "updated_at": "2026-05-01T00:00:00Z",
+                "created_at": thirty_hours_ago.isoformat().replace("+00:00", "Z"),
+                "updated_at": thirty_hours_ago.isoformat().replace("+00:00", "Z"),
                 "html_url": "url",
                 "body": "Old",
             },
@@ -929,6 +940,157 @@ class TestErrorHandling:
         data = json.loads(result)
 
         assert data["body"] == ""  # Should handle None gracefully
+
+
+class TestAWXMode:
+    """Tests for AWX integration mode (environment variable-based execution)."""
+
+    def test_awx_mode_report(self, monkeypatch, mock_github_api, mock_env, sample_github_issues):
+        """Test AWX mode with MODE=report."""
+        # Set AWX environment variables
+        monkeypatch.setenv("MODE", "report")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Mock API response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = sample_github_issues
+        mock_github_api.return_value = mock_response
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            result = main()
+        
+        # AWX mode should execute without CLI args
+        assert mock_github_api.called
+
+    def test_awx_mode_issue(self, monkeypatch, mock_github_api, mock_env, mock_chat_llm, sample_issue_detail):
+        """Test AWX mode with MODE=issue and ISSUE_NUMBER."""
+        # Set AWX environment variables
+        monkeypatch.setenv("MODE", "issue")
+        monkeypatch.setenv("ISSUE_NUMBER", "42")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Mock API responses
+        mock_response_detail = Mock()
+        mock_response_detail.status_code = 200
+        mock_response_detail.json.return_value = sample_issue_detail
+        
+        mock_response_comments = Mock()
+        mock_response_comments.status_code = 200
+        mock_response_comments.json.return_value = []
+        
+        mock_response_post = Mock()
+        mock_response_post.status_code = 201
+        mock_response_post.json.return_value = {
+            "id": 123,
+            "html_url": "https://github.com/test/test/issues/42#issuecomment-123",
+            "created_at": "2026-01-01T12:00:00Z",
+        }
+        
+        mock_github_api.side_effect = [
+            mock_response_comments,  # check_existing_bot_comments
+            mock_response_detail,     # get_issue_details
+            mock_response_comments,   # get_issue_comments
+            mock_response_post,       # post_issue_comment
+        ]
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            with patch("src.main.build_agent") as mock_build:
+                # Mock agent invoke
+                mock_agent = Mock()
+                mock_agent.invoke.return_value = {
+                    "messages": [Mock(content="Issue analyzed and recommendation posted")]
+                }
+                mock_build.return_value = mock_agent
+                
+                result = main()
+        
+        # Should parse issue number from env var and execute
+        assert mock_build.called
+
+    def test_awx_mode_auto_analyze(self, monkeypatch, mock_github_api, mock_env, mock_chat_llm):
+        """Test AWX mode with MODE=auto-analyze."""
+        # Set AWX environment variables
+        monkeypatch.setenv("MODE", "auto-analyze")
+        monkeypatch.setenv("DRY_RUN", "true")
+        monkeypatch.setenv("MAX_ISSUES", "10")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Mock API response (no recent issues)
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = []
+        mock_github_api.return_value = mock_response
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            result = main()
+        
+        # Should parse auto-analyze mode and dry-run flag from env vars
+        assert mock_github_api.called
+
+    def test_awx_mode_missing_issue_number(self, monkeypatch, mock_env):
+        """Test AWX mode fails when MODE=issue but ISSUE_NUMBER missing."""
+        # Set AWX environment variables without ISSUE_NUMBER
+        monkeypatch.setenv("MODE", "issue")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            result = main()
+        
+        # Should return error message
+        assert result is not None
+        assert "requires ISSUE_NUMBER" in result
+
+    def test_awx_mode_invalid_issue_number(self, monkeypatch, mock_env):
+        """Test AWX mode fails when ISSUE_NUMBER is invalid."""
+        # Set AWX environment variables with invalid issue number
+        monkeypatch.setenv("MODE", "issue")
+        monkeypatch.setenv("ISSUE_NUMBER", "invalid")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            result = main()
+        
+        # Should return error message
+        assert result is not None
+        assert "Invalid ISSUE_NUMBER" in result
+
+    def test_awx_mode_dry_run_false(self, monkeypatch, mock_github_api, mock_env):
+        """Test AWX mode with DRY_RUN=false."""
+        # Set AWX environment variables
+        monkeypatch.setenv("MODE", "auto-analyze")
+        monkeypatch.setenv("DRY_RUN", "false")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "testowner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "testrepo")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        
+        # Mock API response (no recent issues)
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = []
+        mock_github_api.return_value = mock_response
+        
+        # Run main in AWX mode
+        with patch("sys.argv", ["main.py"]):  # No CLI args
+            result = main()
+        
+        # Should parse dry_run=false correctly
+        assert mock_github_api.called
 
 
 
